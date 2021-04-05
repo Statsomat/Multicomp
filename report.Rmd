@@ -1,0 +1,65 @@
+---
+title: "Multiple Comparison Procedures To A Control"
+subtitle: "For AN(C)OVA Models"
+author: 
+  - Statsomat.com
+  - Contributors^[Denise Welsch, Markus Neuhäuser, Studentin1, Studentin2, Studentin3]
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+bibliography: ["references.bib"]
+classoption: landscape
+params:
+  data: NA
+  filename: NA
+  fencoding: NA
+  decimal: NA
+  enc_guessed: NA
+  vars1: NA
+  model: NA
+  cont_crit: NA
+header-includes:
+   - \usepackage{xcolor}
+   - \setmainfont[BoldFont=FiraSans-Bold, Extension=.otf]{FiraSans-Regular}
+   - \usepackage{booktabs}
+   - \usepackage{longtable}
+   - \usepackage{float}
+---
+
+\pagebreak
+
+
+```{r, dev = "cairo_pdf", results = "asis", echo = FALSE}
+# Check model syntax 
+msyntax <- TRUE
+model <- params$model
+modelsplit <- unlist(strsplit(model, split="\n"))
+modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
+modelsplit <- modelsplit[modelsplit != ""]
+
+# Set stop errors if the lines (1,2,3) are not as expected 
+```     
+
+
+```{r child = 'report_kernel.Rmd', eval = msyntax}
+```
+
+
+```{r include = FALSE}
+if (exists("eval")) ref_indic <- eval else ref_indic <- FALSE
+```
+  
+  
+```{r, results="asis", eval = ref_indic, echo=FALSE}
+cat("\n# References", fill=TRUE)
+# Add below the option to print the references even if not cited. 
+```
+ 
+---
+nocite: '@*'
+...
+
+

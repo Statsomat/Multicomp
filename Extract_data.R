@@ -6,3 +6,6 @@ data("recovery", package = "multcomp")
 write.csv(recovery, file="recovery.csv")
 
 
+# Add new dataset from book 
+
+

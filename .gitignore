@@ -1,12 +1,4 @@
-
-.RData
+.Rproj.user
 .Rhistory
-*.pper
-.Rproj.user/2D9751F5/saved_source_markers
-.Rproj.user/2D9751F5/rmd-outputs
-.Rproj.user/2D9751F5/sources/prop/7974B24A
-.Rproj.user/2D9751F5/sources/prop/INDEX
-*.json
-.Rproj.user/shared/notebooks/patch-chunk-names
-.Rproj.user/shared/notebooks/paths
-.Rproj.user/2D9751F5/sources/prop/08628735
+.RData
+.Ruserdata

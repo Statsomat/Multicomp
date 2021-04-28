@@ -2,6 +2,7 @@
 library(rmarkdown)
 library(data.table)
 library(shiny)
+library(tinytex)
 
 
 # Import functions 

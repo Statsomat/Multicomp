@@ -79,6 +79,7 @@ write.csv(adevent, file="adevent.csv")
 data("mtept", package = "multcomp")
 write.csv(mtept, file="mtept.csv")
 
+
 ## Dataset biom
 ## cont: resp, dose
 data("biom", package = "DoseFinding")

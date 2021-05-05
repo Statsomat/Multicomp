@@ -8,14 +8,14 @@ library(tinytex)
 # Import functions 
 source("helpers/Functions.R")
 
-
 ##############################################################
 # Input parameters for the automatic .Rmd file 
 # Set values 
 ##############################################################
 filename <- "recovery.csv"
+path = paste(file.path("Datasets"), sep="/", filename)
 decimal <- "."
-data <- fread(filename, header = "auto", sep ="auto", dec = decimal, 
+data <- fread(path, header = "auto", sep ="auto", dec = decimal, 
               encoding ="UTF-8", data.table = FALSE, na.strings = "")
 ## Selection of variables
 vars1 <- c("blanket", "minutes") 

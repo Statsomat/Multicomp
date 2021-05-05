@@ -11,6 +11,7 @@ library(kableExtra) # for tables
 library(multcomp) # mcp
 library(sandwich) # sandwich
 library(car) # type II Anova tests
+library(shiny)
 ```
 
 
@@ -212,13 +213,47 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 
 ```{r factoring, eval=eval}
 # Generate dataframe with factorized categorical variables 
+#Änderung von Erstellung von df_factorized in if-Schleife, damit keine leeren Dateien
+#df_cat<-as.data.frame(df_cat)
 df_cat_factor <- lapply(df_cat, as.factor)
-df_factorized <- cbind(df_cont, df_cat_factor)
+df_cat_factor<-as.data.frame(df_cat_factor)
+# 
+# if (is.null(ncol(df_cat_factor))==TRUE) {
+#       df_factorized <- df_cont
+# } else if (is.null(ncol(df_cont))==TRUE) {
+#      df_factorized <- df_cat_factor
+# } else {
+#       df_factorized <- cbind(df_cont, df_cat_factor)
+# }
+
+if (length(df_cat_factor)==0) {
+      df_factorized <- df_cont
+} else if (length(df_cont)==0) {
+     df_factorized <- df_cat_factor
+} else {
+      df_factorized <- cbind(df_cont, df_cat_factor)
+}
 ```
 
 
 ```{r missings, results="asis", eval=eval}
 # Notice for missings (only <10% missings allowed, only complete cases treated)
+# Missings  > 10%
+complete_rate <- sapply(df_factorized, function(col) 1-(sum(is.na(col)) / dim(df)[1])) 
+if (length(which(complete_rate < 0.90)) != 0L){
+  cat("**Error: Execution stop because of limit on missing values. There exist continuous variables with more than 10% missing values. This app allows max 10% missing values per observed variable. Please reconsider your data before using this app. **")
+  miss_var <- names(which(complete_rate < 0.90)) 
+  eval2 <- FALSE
+  knitr::kable(miss_var, col.names = "Variable(s) with more than 10% missing values", linesep = '', longtable = T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+}
+
+if (nrow(as.data.frame(df_factorized[complete.cases(df_factorized),])) < 10){
+  cat("**Error: Minimum 10 complete cases required. **")
+}
+
+#Weiter nur mit vollständigem Datensatz ohne NAs
+df_factorized<-as.data.frame(df_factorized[complete.cases(df_factorized),])
 ```
 
 

@@ -14,6 +14,8 @@ library(sandwich) # sandwich
 library(car) # type II Anova tests
 library(psych) # multi.hist
 library(shiny) #safeError
+library(formula.tools) #for formula lhs
+library(PerformanceAnalytics) #Scatterplot
 ```
 
 
@@ -225,68 +227,64 @@ df_factorized <- cbind(df_cont, df_cat_factor)
 ```
 
 
-```{r descplots, dev="cairo_pdf", eval=eval}
-# Descriptive plots 
-# Plots for the DV
-# Bivariate plots DV vs IV 
+```{r descplots, dev="cairo_pdf", eval=eval, results='asis'}
+cat("\n# Descriptive Plots \n", fill=TRUE)
+cat("\\small ", fill=TRUE)
+cat("Histogram and Boxplot for dependent Variable \n", fill=TRUE)
 
-# Continuous variables
-## Descriptive graphics: Histograms One Per Page
-### Order by variable name
-df_num_order <- df_num[,order(colnames(df_num)),drop=FALSE]
+#Histogram and Boxplot for IV
+modelfunction = as.formula(modelsplit[1])
+x <- unlist(df_factorized[which(colnames(df_factorized)==lhs(modelfunction))])
 
-### Function for single Histograms
-single_hist <- function(x, main = "Histogram", ylab="Relative Frequency", xlab=NULL, freq=FALSE, bcol="#2fa42d",
-                        dcol=c("#396e9f","#396e9f"), dlty=c("dotted", "solid"), breaks=21) 
-{
-  h <- hist(x, plot=FALSE, breaks=breaks)
-  m <- mean(x, na.rm=TRUE)
-  s <- sd(x, na.rm=TRUE)
-  d <- density(x, na.rm=TRUE)
+main = paste("Histogram of",lhs(modelfunction))
+ylab="Relative Frequency"
+xlab=NULL
+freq=FALSE
+bcol="#2fa42d"
+dcol=c("#396e9f","#396e9f")
+dlty=c("dotted", "solid")
+breaks=21 
+  
+h <- hist(x, plot=FALSE, breaks=breaks)
+m <- mean(x, na.rm=TRUE)
+s <- sd(x, na.rm=TRUE)
+d <- density(x, na.rm=TRUE)
 # Set nice x and y axis limits
-  xlims <- pretty(c(floor(h$breaks[1]),ceiling(last(h$breaks))))
-  ymax <- max(h$density)
-  dmax <- max(d$y)
-  ymax <- max(ymax,dmax)
+xlims <- pretty(c(floor(h$breaks[1]),ceiling(last(h$breaks))))
+ymax <- max(h$density)
+dmax <- max(d$y)
+ymax <- max(ymax,dmax)
 # Plots
-  plot(h, freq=freq, ylim=c(0, ymax*1.2), ylab=ylab, xlab=xlab, main=main, col=bcol, xlim = c(min(xlims), max(xlims)))
-  lines(d, lty=dlty[1], col=dcol[1])
-  curve(dnorm(x,m,s), add=TRUE, lty=dlty[2], col=dcol[2])
-}
+plot(h, freq=freq, ylim=c(0, ymax*1.2), ylab=ylab, xlab=xlab, main=main, col=bcol, xlim = c(min(xlims), max(xlims)))
+lines(d, lty=dlty[1], col=dcol[1])
+curve(dnorm(x,m,s), add=TRUE, lty=dlty[2], col=dcol[2])
 
-### Loop over variables
-for (i in 1:ncol(df_num)){
-  single_hist(df_num_order[,i], main = paste("Histogram of ", colnames(df_num_order[i])))
-}
+cat("\n \\pagebreak \n", fill=TRUE)
 
-# Continuous variables
-## Descriptive graphics: Histograms Summary
-k <- ceiling(ncol(df_num)/20)-1
-for (i in 0:k){
-  m <- 20*i+1
-  n <- min(20*(i+1),ncol(df_num))
-  multi.hist(df_num_order[,m:n], dcol=c("#396e9f","#396e9f"),
-  bcol= "#2fa42d",
-  dlty=c("dotted", "solid"),
-  main = colnames(df_num_order[,m:n]))
-}
 
-# Continuous variables
-## Descriptive graphics: Box-Plot One Per Page
-### Loop over variables
-for (i in 1:ncol(df_num)){
-  boxplot(df_num_order[,c(i)], col = "#2fa42d", main = paste("Boxplot of",colnames(df_num_order[i])),
-          xlab=paste(colnames(df_num_order[i])), horizontal = TRUE)
+boxplot(x, col = "#2fa42d", main = paste("Boxplot of",lhs(modelfunction)),
+          xlab=paste(lhs(modelfunction)), horizontal = TRUE)
+cat("\\newline",fill=TRUE)
+
+# Boxplot for categorical DV
+cat("Boxplot for categorical independent Variable \n", fill=TRUE)
+
+for (i in 1:ncol(df_cat)) {
+  boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
+  cat("\\newline",fill=TRUE)
+  
+}
+cat("\\newline",fill=TRUE)
+
+# Scatterplot for numerical IV
+df_cont_iv <- df_cont[which(colnames(df_cont)!=lhs(modelfunction))]
+if (ncol(df_cont_iv)>0) {
+  cat("Scatterplot for numerical independent Variable \n", fill=TRUE)
+  if (ncol(df_cont_iv)==1) {
+    plot(df_cont_iv)
+  }else if(ncol(df_cont_iv)>1){
+    chart.Correlation(df_cont_iv)
   }
-# Continuous variables
-## Descriptive graphics: Box-Plots Summary
-### Set graphical parameters
-par(mfrow=c(ceiling(sqrt(length(df_num_order))), ceiling(sqrt(length(df_num_order)))),
-    mar=c(1.5,1,2,1), oma=c(1,1,1,1))
-### Loop over variables
-for(i in 1:ncol(df_num)){
-  boxplot(df_num_order[,c(i)], col = "#2fa42d", main = colnames(df_num_order[i]),
-          xlab=paste(colnames(df_num_order[i])), xaxt="n", horizontal = TRUE)
 }
 
 

@@ -3,7 +3,7 @@ title: "Multiple Comparison Procedures To A Control"
 subtitle: "For AN(C)OVA Models"
 author: 
   - Statsomat.com
-  - Contributors^[Denise Welsch, Markus Neuhäuser, Studentin1, Studentin2, Studentin3, Studentin4]
+  - Contributors^[Denise Welsch, Markus Neuhäuser, Viktoria Daum, Linda Müller, Damian Nink, Simone Schüttler, Daniela Wüller]
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output:
   pdf_document:

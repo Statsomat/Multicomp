@@ -24,23 +24,23 @@ model <- "V1 ~ treatment+E1+E2+E3+E4 \n treatment \n Drug"
 ## Criterium to identify continuous vs discrete variables 
 cont_crit <- "Liberal" # or Conservative 
 
-
-params = list(
-  filename = filename,
-  decimal = decimal,
-  data = data,
-  vars1 = vars1,
-  model = model,
-  cont_crit = cont_crit 
-)
-
-msyntax <- TRUE
-model <- params$model
-modelsplit <- unlist(strsplit(model, split="\n"))
-modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
-modelsplit <- modelsplit[modelsplit != ""]
-
-rm(params)
+# 
+# params = list(
+#   filename = filename,
+#   decimal = decimal,
+#   data = data,
+#   vars1 = vars1,
+#   model = model,
+#   cont_crit = cont_crit 
+# )
+# 
+# msyntax <- TRUE
+# model <- params$model
+# modelsplit <- unlist(strsplit(model, split="\n"))
+# modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
+# modelsplit <- modelsplit[modelsplit != ""]
+# 
+# rm(params)
 
 ##############################################################
 # Run parametric, automatic .Rmd file 

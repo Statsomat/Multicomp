@@ -200,6 +200,8 @@ check_reading <- function(col){
 
 df_char2 <- df2[which(sapply(df2, is.character) == 1L)]
 numeric_percent <- sapply(df_char2, function(col) check_reading(col))
+#Warning message:
+#In check_reading(col) : NAs introduced by coercion
 
 if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
   cat("**Warning: More than 90% of the values of these columns could be treated as numeric. Nevertheless, because of some values or the selected decimal character, the columns must be treated as discrete. Are all the values plausible? Please check the data once more before uploading! Column(s):**", names(numeric_percent[(numeric_percent>0.9)]), fill=TRUE)
@@ -231,14 +233,22 @@ df_factorized <- cbind(df_cont, df_cat_factor)
 
 ```{r modelinfo, eval=eval}
 # Model information
+# model funktion, also outputvariable~input1+input2+...
 modelfunction <- modelsplit[1]
+# welche variable wird als Referenzvariable verwendet
 factor_index <- which(colnames(df_factorized) == modelsplit[2])
 
 ## New reference for the comparison 
+# Reorder Levels of Factor: der Datensatz wird nach den Levels des Faktors (der als 
+# Referenz verwendet wird) umsortiert.
 df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = modelsplit[3])
 
 ## Set effect coding for the rest of the factors
-## sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
+# sapply return a Vektor of the same length as df_factorized. Jedes Element enthält das Ergebnis
+# der funktion function(col), also wird die default contrast-matrix überschrieben und anstelle  
+# dessen wird die Funktion contr.sum verwendet um die contrastmatrix festzulegen. 
+
+df_factorized <- sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
 lmfit <- lm(modelfunction, data = df_factorized)
 ```
 

@@ -42,4 +42,19 @@ rmarkdown::render("report.Rmd", params = list(
 
 
 
+# #install.packages("ISwR")
+# library(ISwR)
+# data<-thuesen
+# filename <- "recovery.csv"
+# decimal <- "."
+# vars1 <- c("blood.glucose", "short.velocity")
+# model <- "blood.glucose ~ short.velocity \n short.velocity \n b0"
+# #data <- fread(filename, header = "auto", sep ="auto", dec = decimal,
+# #encoding ="UTF-8", data.table = FALSE, na.strings = "")
+# ## Selection of variables
+# #vars1 <- c("blanket", "minutes")
+# ## Model Information
+# #model <- "minutes ~ blanket \n blanket \n b0"
+# ## Criterium to identify continuous vs discrete variables
+# cont_crit <- "Liberal" # or Conservative
 

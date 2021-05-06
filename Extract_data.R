@@ -23,6 +23,10 @@ write.csv(thuesen, file = "thuesen.csv")
 ## cont: breaks	The number of breaks
 ## factor: wool	The type of wool (A or B)
 ## factor: tension The level of tension (L, M, H)
+## breaks ~ wool + tension \n tension \M
+## break ~ wool 
+## break ~ tension 
+## break ~ wool|tension 
 data("warpbreaks", package="datasets")
 write.csv(warpbreaks, file="warpbreaks.csv")
 

@@ -18,20 +18,20 @@ decimal <- "."
 data <- fread(path, header = "auto", sep ="auto", dec = decimal, 
               encoding ="UTF-8", data.table = FALSE, na.strings = "")
 ## Selection of variables
-vars1 <- c("V1", "treatment","E1","E2","E3","E4") 
+vars1 <- c("treatment","E1", "E2", "E3","E4")
 ## Model Information
-model <- "V1 ~ treatment+E1+E2+E3+E4 \n treatment \n Drug"
+model <- "E1 ~ treatment + E2 + E3 \n treatment \n Placebo"
 ## Criterium to identify continuous vs discrete variables 
-cont_crit <- "Liberal" # or Conservative 
+cont_crit <- "Liberal" # or Conservative Liberal 
 
-# 
+
 # params = list(
 #   filename = filename,
 #   decimal = decimal,
 #   data = data,
 #   vars1 = vars1,
 #   model = model,
-#   cont_crit = cont_crit 
+#   cont_crit = cont_crit
 # )
 # 
 # msyntax <- TRUE

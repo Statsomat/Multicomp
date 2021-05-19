@@ -245,7 +245,17 @@ lmfit <- lm(modelfunction, data = df_factorized)
 
 ```{r type3, eval=eval}
 # Type III tests 
-Anova(lmfit, type=3)
+a = Anova(lmfit, type=3)
+#Erstelle Dataframe
+df_table <- as.data.frame(a)
+#fuegt eine neue Spalte Interpretation hinzu und fuellt diese mit 'P-Wert nicht angegeben'
+df_table['Interpretation (5% Fehler)'] <- 'P-Wert nicht angegeben'
+#Schreibt '...' rein, wenn P-Wert <= 0.05
+df_table$`Interpretation (5% Fehler)`[df_table$'Pr(>F)' <= 0.05] = 'Es gibt Unterschiede zwischen den Niveaus'
+#Schreibt '...' rein, wenn P-Wert > 0.05
+df_table$`Interpretation (5% Fehler)`[df_table$'Pr(>F)' > 0.05] = 'Es gibt keine Unterschiede zwischen den Niveaus'
+#Plotte Ergebnis
+print.data.frame(df_table)
 ```
 
 

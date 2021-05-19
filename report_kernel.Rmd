@@ -221,9 +221,9 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 df_cat_factor <- lapply(df_cat, as.factor)
 
 if(length(df_cat_factor)==0 ){
-  df_factorized <- df_cont
+  df_factorized <- as.data.frame(df_cont)
 }else if( length(df_cont) == 0){
-  df_factorized <- df_cat_factor
+  df_factorized <- as.data.frame(df_cat_factor)
 }else{
   df_factorized <- cbind(df_cont, df_cat_factor)  
 }
@@ -240,11 +240,12 @@ if(length(df_cat_factor)==0 ){
 ```{r descplots, dev="cairo_pdf", eval=eval, results='asis'}
 cat("\n# Descriptive Plots \n", fill=TRUE)
 cat("\\small ", fill=TRUE)
-cat("Histogram and Boxplot for dependent Variable \n", fill=TRUE)
+cat("## Histogram and Boxplot for dependent Variable \n", fill=TRUE)
 
 #Histogram and Boxplot for IV
 modelfunction = as.formula(modelsplit[1])
 x <- unlist(df_factorized[which(colnames(df_factorized)==lhs(modelfunction))])
+x <- as.numeric(x)
 
 main = paste("Histogram of",lhs(modelfunction))
 ylab="Relative Frequency"
@@ -278,22 +279,23 @@ cat("\n \\pagebreak \n",fill=TRUE)
 
 
 # Boxplot for categorical DV
-if(length(df_factor) != 0){
-  cat("Boxplot for categorical independent Variable \n", fill=TRUE)
-
-  for (i in 1:ncol(df_cat)) {
-    boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
-    cat("\\newline",fill=TRUE)
+if(!(c(lhs(modelfunction))%in%c(colnames(df_cat)))){
+  if(length(df_factor) != 0){
+    cat("## Boxplot for categorical independent Variables \n", fill=TRUE)
   
+    for (i in 1:ncol(df_cat)) {
+        boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
+      cat("\\newline",fill=TRUE)
+    }
+    cat("\n \\pagebreak \n",fill=TRUE)
   }
-  cat("\n \\pagebreak \n",fill=TRUE)
 }
 
 # Scatterplot for numerical IV
 if(length(df_cont)!=0 ){
   df_cont_iv <- df_cont[which(colnames(df_cont)!=lhs(modelfunction))]
   if (ncol(df_cont_iv)>0) {
-    cat("Scatterplot for numerical independent Variable \n", fill=TRUE)
+    cat("## Scatterplot for numerical independent Variables \n", fill=TRUE)
     if (ncol(df_cont_iv)==1) {
       plot(x = c(1:nrow(df_cont_iv)) ,y=df_cont_iv[,1], col = "#2fa42d", main=paste("Scatterplot of", colnames(df_cont_iv))
            , xlab = "x", ylab = colnames(df_cont_iv))

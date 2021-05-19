@@ -246,9 +246,14 @@ df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = mode
 ## Set effect coding for the rest of the factors
 # sapply return a Vektor of the same length as df_factorized. Jedes Element enthält das Ergebnis
 # der funktion function(col), also wird die default contrast-matrix überschrieben und anstelle  
-# dessen wird die Funktion contr.sum verwendet um die contrastmatrix festzulegen. 
+# dessen wird die Funktion contr.sum verwendet um die contrastmatrix festzulegen.
 
-df_factorized <- sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
+#df_factorized <- sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
+for (i in 1:ncol(df_factorized)) {
+  if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
+}
+#options(contrasts=rep("contr.sum",2))
+#contrasts(df_factorized$blanket)
 lmfit <- lm(modelfunction, data = df_factorized)
 ```
 

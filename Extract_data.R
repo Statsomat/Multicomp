@@ -13,13 +13,14 @@ data("thuesen", package="ISwR")
 write.csv(thuesen, file = "thuesen.csv")
 
 ## Dataset warpbreaks
-## cont: breaks	The number of breaks
+## Dependent variable: "breaks", continuous
+## Independent: "wool" (discrete), "tension" (discrete)
 ## factor: wool	The type of wool (A or B)
 ## factor: tension The level of tension (L, M, H)
-## breaks ~ wool + tension \n tension \M
+## breaks ~ wool + tension 
 ## break ~ wool 
 ## break ~ tension 
-## break ~ wool|tension 
+## break ~ wool*tension 
 data("warpbreaks", package="datasets")
 write.csv(warpbreaks, file="warpbreaks.csv")
 

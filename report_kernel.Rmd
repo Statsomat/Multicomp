@@ -101,7 +101,6 @@ if (ncol(df_num)>0){
 
 # Extract character variables 
 df_factor <- df[which(sapply(df, is.character) == 1L)]
-df_factor <- cbind(df_factor, df[which(sapply(df, is.factor) == 1L)])
 
 # Categorical 
 if (exists("df_noncont")){
@@ -279,16 +278,14 @@ cat("\n \\pagebreak \n",fill=TRUE)
 
 
 # Boxplot for categorical DV
-if(!(c(lhs(modelfunction))%in%c(colnames(df_cat)))){
-  if(length(df_factor) != 0){
-    cat("## Boxplot for categorical independent Variables \n", fill=TRUE)
-  
-    for (i in 1:ncol(df_cat)) {
-        boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
-      cat("\\newline",fill=TRUE)
-    }
-    cat("\n \\pagebreak \n",fill=TRUE)
+if(length(df_factor) != 0){
+  cat("## Boxplot for categorical independent Variables \n", fill=TRUE)
+
+  for (i in 1:ncol(df_cat)) {
+      boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
+    cat("\\newline",fill=TRUE)
   }
+  cat("\n \\pagebreak \n",fill=TRUE)
 }
 
 # Scatterplot for numerical IV

@@ -11,15 +11,15 @@ source("helpers/Functions.R")
 # Input parameters for the automatic .Rmd file 
 # Set values 
 ##############################################################
-filename <- "recovery.csv"
+filename <- "warpbreaks.csv"
 path = paste(file.path("Datasets"), sep="/", filename)
 decimal <- "."
 data <- fread(path, header = "auto", sep ="auto", dec = decimal, 
               encoding ="UTF-8", data.table = FALSE, na.strings = "")
 ## Selection of variables
-vars1 <- c("blanket", "minutes") 
+vars1 <- c("breaks", "wool", "tension") 
 ## Model Information
-model <- "minutes ~ blanket \n blanket \n b0"
+model <- "breaks ~ wool*tension \n tension \n L"
 ## Criterium to identify continuous vs discrete variables 
 cont_crit <- "Liberal" # or Conservative 
 

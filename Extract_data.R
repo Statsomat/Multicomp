@@ -1,12 +1,5 @@
 
 library(multcomp)
-library(ISwR)
-library(MASS)
-library(datasets)
-library(TH.data)
-library(coin)
-library(survival)
-library(DoseFinding)
 
 # Dataset recovery.csv, page 70
 ## Factor: blanket 

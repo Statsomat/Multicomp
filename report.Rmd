@@ -34,9 +34,6 @@ header-includes:
 
 ```{r, dev = "cairo_pdf", results = "asis", echo = F}
 # Check model syntax 
-# strsplit. Splittet den String an den Stellen wo \n steht  
-# gsub. ersetzt leerzeichen durch keine Leerzeichen 
-# letzter modelsplit. wählt an der Stelle aus, wo etwas enthalten ist
 msyntax <- TRUE
 model <- params$model
 modelsplit <- unlist(strsplit(model, split="\n"))

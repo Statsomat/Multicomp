@@ -1,5 +1,6 @@
 ---
 title: "Multiple Comparison Procedures To A Control"
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -239,6 +240,7 @@ if (length(df_cat_factor)==0) {
 ```{r missings, results="asis", eval=eval}
 # Notice for missings (only <10% missings allowed, only complete cases treated)
 # Missings  > 10%
+eval2<-TRUE
 complete_rate <- sapply(df_factorized, function(col) 1-(sum(is.na(col)) / dim(df)[1])) 
 if (length(which(complete_rate < 0.90)) != 0L){
   cat("**Error: Execution stop because of limit on missing values. There exist continuous variables with more than 10% missing values. This app allows max 10% missing values per observed variable. Please reconsider your data before using this app. **")
@@ -250,10 +252,23 @@ if (length(which(complete_rate < 0.90)) != 0L){
 
 if (nrow(as.data.frame(df_factorized[complete.cases(df_factorized),])) < 10){
   cat("**Error: Minimum 10 complete cases required. **")
+  eval2<-FALSE
 }
 
-#Weiter nur mit vollständigem Datensatz ohne NAs
-df_factorized<-as.data.frame(df_factorized[complete.cases(df_factorized),])
+#tryCatch(error=function(e) {
+  tryCatch( 
+  if(eval2==FALSE){
+  stop(safeError("TOO MANY MISSING VALUES"))
+    
+  
+}
+)
+# 
+# if(eval2==FALSE){
+#   stop("Too many missing values")
+# } else {#Weiter nur mit vollständigem Datensatz ohne NAs
+# df_factorized<-as.data.frame(df_factorized[complete.cases(df_factorized),])}
+
 ```
 
 

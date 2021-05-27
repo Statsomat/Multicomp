@@ -177,7 +177,9 @@ if (exists("df_cont")){
       kable_styling(font_size = 8, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
   } else {
     cat("0", fill=TRUE)
-    cat("\\newline",fill=TRUE) 
+    cat("\\newline",fill=TRUE)
+    cat("Error: There are no continuous variables of interest in the dataset. ")
+    eval <- FALSE
   }
 }
 
@@ -191,6 +193,8 @@ if (exists("df_cat")){
   } else {
     cat("0", fill=TRUE)
     cat("\\newline",fill=TRUE) 
+    cat("Error: There are no factors in the dataset. ")
+    eval <- FALSE
   }
 }
 ```

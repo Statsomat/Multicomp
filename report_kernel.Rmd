@@ -222,15 +222,7 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 ```{r factoring, eval=eval}
 # Generate dataframe with factorized categorical variables 
 df_cat_factor <- lapply(df_cat, as.factor)
-
-if(length(df_cat_factor)==0 ){
-  df_factorized <- as.data.frame(df_cont)
-}else if( length(df_cont) == 0){
-  df_factorized <- as.data.frame(df_cat_factor)
-}else{
-  df_factorized <- cbind(df_cont, df_cat_factor)  
-}
-
+df_factorized <- cbind(df_cont, df_cat_factor)  
 
 ```
 
@@ -282,29 +274,27 @@ cat("\n \\pagebreak \n",fill=TRUE)
 
 
 # Boxplot for categorical DV
-if(length(df_factor) != 0){
-  cat("## Boxplot for categorical independent Variables \n", fill=TRUE)
+cat("## Boxplot for categorical independent Variables \n", fill=TRUE)
 
-  for (i in 1:ncol(df_cat)) {
-      boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
-    cat("\\newline",fill=TRUE)
-  }
+for (i in 1:ncol(df_cat)) {
+    boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
   cat("\n \\pagebreak \n",fill=TRUE)
 }
+cat("\n \\pagebreak \n",fill=TRUE)
+
 
 # Scatterplot for numerical IV
-if(length(df_cont)!=0 ){
-  df_cont_iv <- df_cont[which(colnames(df_cont)!=lhs(modelfunction))]
-  if (ncol(df_cont_iv)>0) {
-    cat("## Scatterplot for numerical independent Variables \n", fill=TRUE)
-    if (ncol(df_cont_iv)==1) {
-      plot(x = c(1:nrow(df_cont_iv)) ,y=df_cont_iv[,1], col = "#2fa42d", main=paste("Scatterplot of", colnames(df_cont_iv))
-           , xlab = "x", ylab = colnames(df_cont_iv))
-    }else if(ncol(df_cont_iv)>1){
-      chart.Correlation(df_cont_iv, col = "#2fa42d", main=paste("Correlation Plot of numerical independent Variables"))
-    }
+df_cont_iv <- df_cont[which(colnames(df_cont)!=lhs(modelfunction))]
+if (ncol(df_cont_iv)>0) {
+  cat("## Scatterplot for numerical independent Variables \n", fill=TRUE)
+  if (ncol(df_cont_iv)==1) {
+    plot(x = c(1:nrow(df_cont_iv)) ,y=df_cont_iv[,1], col = "#2fa42d", main=paste("Scatterplot of", colnames(df_cont_iv))
+         , xlab = "x", ylab = colnames(df_cont_iv))
+  }else if(ncol(df_cont_iv)>1){
+    chart.Correlation(df_cont_iv, col = "#2fa42d", main=paste("Correlation Plot of numerical independent Variables"))
   }
 }
+
 
 ```
 

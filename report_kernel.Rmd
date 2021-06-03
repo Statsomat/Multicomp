@@ -83,7 +83,6 @@ df_num <- df[which(sapply(df, is.numeric) == 1L)]
 if (ncol(df_num)>0){
 
   rateunique_df <- sapply(df_num, function(col) continuous(col))
-  cols_continuous <- names(which(rateunique_df == TRUE))
   
   if (params$cont_crit == "Conservative"){
     df_cont <- df_num[,rateunique_df,drop=FALSE] # numeric, continuous resp. assumption fulfilled 
@@ -91,6 +90,8 @@ if (ncol(df_num)>0){
   } else {
     df_cont <- df_num 
   }
+  
+   cols_continuous <- colnames(df_cont)
   
 } 
 
@@ -214,6 +215,19 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 
 \pagebreak
 
+```{r modelinformation, eval=eval, results="asis"}
+cat("# Model Information", fill=TRUE)
+cat("You defined the following linear model:", fill=TRUE)
+cat(modelsplit[1])
+cat("\\newline",fill=TRUE)
+cat("You are interested in the factor:", fill=TRUE)
+cat(modelsplit[2])
+cat("\\newline",fill=TRUE)
+cat("You are interested in pairwise comparisons to the control factor level:", fill=TRUE)
+cat(modelsplit[3])
+```
+
+
 ```{r factoring, eval=eval}
 # Generate dataframe with factorized categorical variables 
 df_cat_factor <- lapply(df_cat, as.factor)
@@ -285,13 +299,13 @@ confint(output_mcp, level = 0.95)
 ```
 
 
-```{r, eval=eval}
+```{r, eval=FALSE}
 # MCPs with a control Dunnet step-down 
 summary(output_mcp, test = adjusted(type = "free"))
 ```
 
 
-```{r, eval=eval}
+```{r, eval=FALSE}
 # MCPs with a control Dunnet Sandwich
 output_sandwich <- glht(lmfit, linfct = mcp2(mylist), alternative = "less", vcov = sandwich)
 summary(output_sandwich)
@@ -300,7 +314,7 @@ confint(output_sandwich, level = 0.95)
 ```
 
 
-```{r, eval=eval}
+```{r, eval=FALSE}
 # MCPs with a control Dunnet step-down, Sandwich
 summary(output_sandwich, test = adjusted(type = "free"))
 ```

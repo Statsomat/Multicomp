@@ -70,3 +70,12 @@ mcp2 <- function(x, interaction_average = FALSE, covariate_average = FALSE) {
   stop("Arguments don't consist of either matrices or characters")
 }
 
+
+# p-value format
+pformat <- function(p){
+  if (is.na(p)){
+    return(NA)
+  } else if (p<0.001){ 
+    return("<0.001")
+  } else return (round(p,3))
+}

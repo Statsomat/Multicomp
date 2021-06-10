@@ -35,7 +35,7 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
 ## Selection of variables
 vars1 <- c("breaks", "wool", "tension")
 ## Model Information
-model <- "breaks ~ wool + tension \n tension \n L"
+model <- "breaks ~ wool + tension + wool*tension \n tension \n L"
 ## Criterium to identify continuous vs discrete variables
 cont_crit <- "Liberal" # or Conservative
 
@@ -53,6 +53,7 @@ rmarkdown::render("report.Rmd", params = list(
 ))
 
 ############################################## end of program ########################################################################
+
 
 
 

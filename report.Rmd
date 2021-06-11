@@ -32,7 +32,7 @@ header-includes:
 \pagebreak
 
 
-```{r, dev = "cairo_pdf", results = "asis", echo = F}
+```{r, dev = "cairo_pdf", results = "asis", echo = FALSE}
 # Check model syntax 
 msyntax <- TRUE
 model <- params$model

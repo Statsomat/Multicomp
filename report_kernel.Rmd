@@ -331,7 +331,7 @@ if(ncol(df_cat)>=2){
 ```
 
 
-```{r modelinfo, eval=eval}
+```{r modelinfo, dev="cairo_pdf", eval=eval, results='asis'}
 # Model information
 modelfunction <- modelsplit[1]
 factor_index <- which(colnames(df_factorized) == modelsplit[2])
@@ -396,6 +396,7 @@ fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% er
 number= fn1
 
 # create table
+cat("\n \\pagebreak \n",fill=TRUE)
 opts <- options(knitr.kable.NA = "")
 x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption="Parameter Estimates", longtable = T)
 footnote(x, number = number) %>%

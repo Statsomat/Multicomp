@@ -1,7 +1,33 @@
 # Wrapper examples for the datasets:
 
 
-# Dataset warpbreaks
+# Dataset warpbreaks, one-factorial
+filename <- "warpbreaks.csv"
+path = paste(file.path("Datasets"), sep="/", filename)
+decimal <- "."
+data <- fread(path, header = "auto", sep ="auto", dec = decimal, 
+              encoding ="UTF-8", data.table = FALSE, na.strings = "")
+## Selection of variables
+vars1 <- c("breaks", "wool", "tension") 
+## Model Information
+model <- "breaks ~ wool \n wool \n A"
+
+
+
+# Dataset warpbreaks, one-factorial
+filename <- "warpbreaks.csv"
+path = paste(file.path("Datasets"), sep="/", filename)
+decimal <- "."
+data <- fread(path, header = "auto", sep ="auto", dec = decimal, 
+              encoding ="UTF-8", data.table = FALSE, na.strings = "")
+## Selection of variables
+vars1 <- c("breaks", "wool", "tension") 
+## Model Information
+model <- "breaks ~ tension \n tension \n L"
+
+
+
+# Dataset warpbreaks, two-factorial 
 filename <- "warpbreaks.csv"
 path = paste(file.path("Datasets"), sep="/", filename)
 decimal <- "."
@@ -11,3 +37,59 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
 vars1 <- c("breaks", "wool", "tension") 
 ## Model Information
 model <- "breaks ~ wool*tension \n tension \n L"
+
+
+
+# Dataset warpbreaks, two-factorial 
+filename <- "warpbreaks.csv"
+path = paste(file.path("Datasets"), sep="/", filename)
+decimal <- "."
+data <- fread(path, header = "auto", sep ="auto", dec = decimal, 
+              encoding ="UTF-8", data.table = FALSE, na.strings = "")
+## Selection of variables
+vars1 <- c("breaks", "wool", "tension") 
+## Model Information
+model <- "breaks ~ wool*tension \n wool \n A"
+
+
+# Dataset recovery, one-factorial
+filename <- "recovery.csv"
+path = paste(file.path("Datasets"), sep="/", filename)
+decimal <- "."
+data <- fread(path, header = "auto", sep ="auto", dec = decimal, 
+              encoding ="UTF-8", data.table = FALSE, na.strings = "")
+## Selection of variables
+vars1 <- c("minutes", "blanket") 
+## Model Information
+model <- "minutes ~ blanket \n blanket \n b0"
+
+
+
+# Dataset litter, ANCOVA model, no interactions
+filename <- "litter.csv"
+path = paste(file.path("Datasets"), sep="/", filename)
+decimal <- "."
+data <- fread(path, header = "auto", sep ="auto", dec = decimal, 
+              encoding ="UTF-8", data.table = FALSE, na.strings = "")
+## Selection of variables
+vars1 <- c("weight", "dose", "gesttime", "number") 
+## Model Information
+model <- "weight ~ dose + gesttime + number \n dose \n 0"
+
+
+
+# Dataset litter, ANCOVA model, interactions
+filename <- "litter.csv"
+path = paste(file.path("Datasets"), sep="/", filename)
+decimal <- "."
+data <- fread(path, header = "auto", sep ="auto", dec = decimal, 
+              encoding ="UTF-8", data.table = FALSE, na.strings = "")
+## Selection of variables
+vars1 <- c("weight", "dose", "gesttime", "number") 
+## Model Information
+model <- "weight ~ dose+gesttime+number+dose*number+gesttime*number \n dose \n 0"
+
+
+
+
+

@@ -2,4 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
-.Rwrapper
+wrapper.R
+report.pdf

@@ -1,5 +1,6 @@
 ---
 title: "Multiple Comparison Procedures To A Control"
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -11,7 +12,11 @@ library(kableExtra) # for tables
 library(multcomp) # mcp
 library(sandwich) # sandwich
 library(car) # type II Anova tests
-library(stringr) # for strings
+library(psych) # multi.hist
+library(shiny) #safeError
+library(formula.tools) #for formula lhs
+library(PerformanceAnalytics) #Scatterplot
+library(rlang) #as_string for cast
 ```
 
 
@@ -84,7 +89,6 @@ df_num <- df[which(sapply(df, is.numeric) == 1L)]
 if (ncol(df_num)>0){
 
   rateunique_df <- sapply(df_num, function(col) continuous(col))
-  cols_continuous <- names(which(rateunique_df == TRUE))
   
   if (params$cont_crit == "Conservative"){
     df_cont <- df_num[,rateunique_df,drop=FALSE] # numeric, continuous resp. assumption fulfilled 
@@ -92,6 +96,8 @@ if (ncol(df_num)>0){
   } else {
     df_cont <- df_num 
   }
+  
+   cols_continuous <- colnames(df_cont)
   
 } 
 
@@ -205,8 +211,6 @@ check_reading <- function(col){
 
 df_char2 <- df2[which(sapply(df2, is.character) == 1L)]
 numeric_percent <- sapply(df_char2, function(col) check_reading(col))
-#Warning message:
-#In check_reading(col) : NAs introduced by coercion
 
 if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
   cat("**Warning: More than 90% of the values of these columns could be treated as numeric. Nevertheless, because of some values or the selected decimal character, the columns must be treated as discrete. Are all the values plausible? Please check the data once more before uploading! Column(s):**", names(numeric_percent[(numeric_percent>0.9)]), fill=TRUE)
@@ -217,10 +221,24 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 
 \pagebreak
 
+```{r modelinformation, eval=eval, results="asis"}
+cat("# Model Information", fill=TRUE)
+cat("You defined the following linear model:", fill=TRUE)
+cat(modelsplit[1])
+cat("\\newline",fill=TRUE)
+cat("You are interested in the factor:", fill=TRUE)
+cat(modelsplit[2])
+cat("\\newline",fill=TRUE)
+cat("You are interested in pairwise comparisons to the control factor level:", fill=TRUE)
+cat(modelsplit[3])
+```
+
+
 ```{r factoring, eval=eval}
 # Generate dataframe with factorized categorical variables 
 df_cat_factor <- lapply(df_cat, as.factor)
-df_factorized <- cbind(df_cont, df_cat_factor)
+df_factorized <- cbind(df_cont, df_cat_factor)  
+
 ```
 
 
@@ -229,85 +247,100 @@ df_factorized <- cbind(df_cont, df_cat_factor)
 ```
 
 
-```{r descplots, dev="cairo_pdf", eval=eval}
-# Descriptive plots 
-# Plots for the DV
-# Bivariate plots DV vs IV 
+```{r descplots, dev="cairo_pdf", eval=eval, results='asis'}
+cat("\n# Descriptive Plots \n", fill=TRUE)
+cat("\\small ", fill=TRUE)
+cat("## Dependent Variable \n", fill=TRUE)
+
+#Histogram and Boxplot for DV
+modelfunction = as.formula(modelsplit[1])
+x <- unlist(df_factorized[which(colnames(df_factorized)==lhs(modelfunction))])
+x <- as.numeric(x)
+
+main = paste("Histogram of",lhs(modelfunction))
+ylab="Relative Frequency"
+xlab= as_string(lhs(modelfunction))
+freq=FALSE
+bcol="#2fa42d"
+dcol=c("#396e9f","#396e9f")
+dlty=c("dotted", "solid")
+breaks=21 
+  
+h <- hist(x, plot=FALSE, breaks=breaks)
+m <- mean(x, na.rm=TRUE)
+s <- sd(x, na.rm=TRUE)
+d <- density(x, na.rm=TRUE)
+# Set nice x and y axis limits
+xlims <- pretty(c(floor(h$breaks[1]),ceiling(last(h$breaks))))
+ymax <- max(h$density)
+dmax <- max(d$y)
+ymax <- max(ymax,dmax)
+# Plots
+plot(h, freq=freq, ylim=c(0, ymax*1.2), ylab=ylab, xlab=xlab, main=main, col=bcol, xlim = c(min(xlims), max(xlims)))
+lines(d, lty=dlty[1], col=dcol[1])
+curve(dnorm(x,m,s), add=TRUE, lty=dlty[2], col=dcol[2])
+
+cat("\n \\newline \n ", fill=TRUE)
+
+
+boxplot(x, col = "#2fa42d", main = paste("Boxplot of",lhs(modelfunction)),
+          xlab=paste(lhs(modelfunction)), horizontal = TRUE)
+cat("\n \\pagebreak \n",fill=TRUE)
+
+
+# Boxplot for categorical IV
+cat("## Dependent Against Categorical Factors \n", fill=TRUE)
+
+for (i in 1:ncol(df_cat)) {
+    boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
+  cat("\n \\pagebreak \n",fill=TRUE)
+}
+cat("\n \\pagebreak \n",fill=TRUE)
+
+
+# Scatterplot for numerical IV
+df_cont_iv <- df_cont[which(colnames(df_cont)!=lhs(modelfunction))]
+if (ncol(df_cont_iv)>0) {
+  cat("## Dependent against Covariates \n", fill=TRUE)
+  if (ncol(df_cont_iv)==1) {
+   plot(x =  df_cont_iv[,1],y=x, col = "#2fa42d", main=paste("Scatterplot of", colnames(df_cont_iv))
+        , xlab = colnames(df_cont_iv), ylab = lhs(modelfunction))
+  }else if(ncol(df_cont_iv)>1){
+    chart.Correlation(df_cont_iv, col = "#2fa42d", main=paste("Correlation Plot of numerical independent Variables"))
+  }
+}
+
+cat("\n \\pagebreak \n",fill=TRUE)
+# Interaction Plot
+if(ncol(df_cat)>=2){
+  cat("## Interaction Plot for Factors \n", fill=TRUE)
+  cat("\n Note: The more parallel the lines, the less likely is the significance of the interaction of the factors. \n", fill=TRUE)
+
+  for (i in 1:(ncol(df_cat)-1)) {
+    for (j in (i+1):ncol(df_cat)) {
+      interaction.plot(df_cat[,i], df_cat[,j], x, xlab= colnames(df_cat)[i], trace.label = colnames(df_cat)[j], ylab=paste("mean of", lhs(modelfunction)), col = "#2fa42d",main=paste("Interaction Plot of ", colnames(df_cat)[i], " and ", colnames(df_cat)[j]))
+      cat("\n \\newline \n ", fill=TRUE)
+    }
+  }
+}
+
+
+
+
 ```
 
 
 ```{r modelinfo, eval=eval}
 # Model information
 modelfunction <- modelsplit[1]
-
-#Filter out column of the factor of interest.
 factor_index <- which(colnames(df_factorized) == modelsplit[2])
 
 ## New reference for the comparison 
-# Reorder the levels of the factor of interest so that the reference factor is in the first place.
 df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = modelsplit[3])
 
 ## Set effect coding for the rest of the factors
-##df_factorized <- sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
-for (i in 1:ncol(df_factorized)) {
-  if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
-}
-
-#linear Regression
+## sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
 lmfit <- lm(modelfunction, data = df_factorized)
-
-# Table Parameter estimates
-coef.lmfit <- as.data.frame(summary(lmfit)$coefficients)
-coef.lmfit1 <- data.frame("Variable"=rownames(coef.lmfit),"Value"=coef.lmfit$Estimate, 
-                          "Std.Error"=coef.lmfit$'Std. Error',"t.value"=coef.lmfit$'t value',
-                          "pvalue"=coef.lmfit$'Pr(>|t|)')
-coef.lmfit1$pvalue <- sapply(coef.lmfit1$pvalue,pformat)
-
-# column significance levels
-coef.lmfit1$'sign. level' <- NA
-coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') <= 0.001)] <- "***"
-coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.001)] <- "**"
-coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.01)] <- "*"
-coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.05)] <- "."
-coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.1)] <- " "
-coef.lmfit1$'sign. level'[which(is.na(coef.lmfit1$pvalue))] <- "-"
-
-names(coef.lmfit1)[6] <- paste0(names(coef.lmfit1)[6], footnote_marker_number(1, "latex"))
-
-
-# column declaration of significance
-coef.lmfit1$sig <- NA
-for (i in 2:nrow(coef.lmfit1)) {
-  if(coef.lmfit1[i,]$pvalue <= 0.05){
-    if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
-      coef.lmfit1[i,]$sig <- paste0("Interaction Significant. Effect ",sub(":", paste0(" vs. ","reference ", "depends on "), coef.lmfit1[i,]$Variable),".")
-                              
-    }else coef.lmfit1[i,]$sig <- paste0("Significant. A Difference between the effect of ", 
-                                        coef.lmfit1[i,]$Variable, " and its reference.")
-  }else{ 
-    if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
-      coef.lmfit1[i,]$sig <- paste0("Interaction not Significant. Effect ",sub(":", paste0(" vs. ","reference ", "don't depends on "), coef.lmfit1[i,]$Variable),".")
-    }else coef.lmfit1[i,]$sig <- paste0("Not Significant. No difference between the effect of ",coef.lmfit1[i,]$Variable, " and its reference.")}
-     
-}
- 
-
-if(coef.lmfit1[1,]$pvalue <= 0.05){
-    coef.lmfit1[1,]$sig <- "Intercept Significant."
-}else {coef.lmfit1[1,]$sig <- "Intercept not Significant."}
-
-
-# footnote significance codes
-names(coef.lmfit1)[7] <- "Significance at 5 percent error"
-fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
-
-number= fn1
-
-# create table
-opts <- options(knitr.kable.NA = "")
-x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption="Parameter Estimates", longtable = T)
-footnote(x, number = number) %>%
-  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
 
@@ -349,13 +382,13 @@ confint(output_mcp, level = 0.95)
 ```
 
 
-```{r, eval=eval}
+```{r, eval=FALSE}
 # MCPs with a control Dunnet step-down 
 summary(output_mcp, test = adjusted(type = "free"))
 ```
 
 
-```{r, eval=eval}
+```{r, eval=FALSE}
 # MCPs with a control Dunnet Sandwich
 output_sandwich <- glht(lmfit, linfct = mcp2(mylist), alternative = "less", vcov = sandwich)
 summary(output_sandwich)
@@ -364,7 +397,7 @@ confint(output_sandwich, level = 0.95)
 ```
 
 
-```{r, eval=eval}
+```{r, eval=FALSE}
 # MCPs with a control Dunnet step-down, Sandwich
 summary(output_sandwich, test = adjusted(type = "free"))
 ```

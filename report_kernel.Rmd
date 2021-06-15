@@ -331,14 +331,16 @@ if(ncol(df_cat)>=2){
 ```
 
 
-```{r modelinfo, dev="cairo_pdf", eval=eval, results='asis'}
+```{r modelinfo, eval=eval}
 # Model information
 modelfunction <- modelsplit[1]
 factor_index <- which(colnames(df_factorized) == modelsplit[2])
 
 ## New reference for the comparison 
 df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = modelsplit[3])
+```
 
+```{r linearReg, eval=eval}
 ## Set effect coding for the rest of the factors
 ##df_factorized <- sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
 for (i in 1:ncol(df_factorized)) {
@@ -347,7 +349,9 @@ for (i in 1:ncol(df_factorized)) {
 
 #linear Regression
 lmfit <- lm(modelfunction, data = df_factorized)
+```
 
+```{r Parametertable, dev="cairo_pdf", eval=eval, results='asis'}
 # Table Parameter estimates
 coef.lmfit <- as.data.frame(summary(lmfit)$coefficients)
 coef.lmfit1 <- data.frame("Variable"=rownames(coef.lmfit),"Value"=coef.lmfit$Estimate, 

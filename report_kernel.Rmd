@@ -17,6 +17,7 @@ library(shiny) #safeError
 library(formula.tools) #for formula lhs
 library(PerformanceAnalytics) #Scatterplot
 library(rlang) #as_string for cast
+library(stringr) # for strings
 ```
 
 
@@ -337,10 +338,73 @@ factor_index <- which(colnames(df_factorized) == modelsplit[2])
 
 ## New reference for the comparison 
 df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = modelsplit[3])
+```
 
+```{r linearReg, eval=eval}
 ## Set effect coding for the rest of the factors
-## sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
+##sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
+for (i in 1:ncol(df_factorized)) {
+  if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
+}
+
+#linear Regression
 lmfit <- lm(modelfunction, data = df_factorized)
+```
+
+```{r Parametertable, dev="cairo_pdf", eval=eval, results='asis'}
+# Table Parameter estimates
+coef.lmfit <- as.data.frame(summary(lmfit)$coefficients)
+coef.lmfit1 <- data.frame("Variable"=rownames(coef.lmfit),"Value"=coef.lmfit$Estimate, 
+                          "Std.Error"=coef.lmfit$'Std. Error',"t.value"=coef.lmfit$'t value',
+                          "pvalue"=coef.lmfit$'Pr(>|t|)')
+coef.lmfit1$pvalue <- sapply(coef.lmfit1$pvalue,pformat)
+
+# column significance levels
+coef.lmfit1$'sign. level' <- NA
+coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') <= 0.001)] <- "***"
+coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.001)] <- "**"
+coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.01)] <- "*"
+coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.05)] <- "."
+coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.1)] <- " "
+coef.lmfit1$'sign. level'[which(is.na(coef.lmfit1$pvalue))] <- "-"
+
+names(coef.lmfit1)[6] <- paste0(names(coef.lmfit1)[6], footnote_marker_number(1, "latex"))
+
+
+# column declaration of significance
+coef.lmfit1$sig <- NA
+for (i in 2:nrow(coef.lmfit1)) {
+  if(coef.lmfit1[i,]$pvalue <= 0.05){
+    if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
+      coef.lmfit1[i,]$sig <- paste0("Interaction Significant. Effect ",sub(":", paste0(" vs. ","reference ", "depends on "), coef.lmfit1[i,]$Variable),".")
+                              
+    }else coef.lmfit1[i,]$sig <- paste0("Significant. A Difference between the effect of ", 
+                                        coef.lmfit1[i,]$Variable, " and its reference.")
+  }else{ 
+    if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
+      coef.lmfit1[i,]$sig <- paste0("Interaction not Significant. Effect ",sub(":", paste0(" vs. ","reference ", "don't depends on "), coef.lmfit1[i,]$Variable),".")
+    }else coef.lmfit1[i,]$sig <- paste0("Not Significant. No difference between the effect of ",coef.lmfit1[i,]$Variable, " and its reference.")}
+     
+}
+ 
+
+if(coef.lmfit1[1,]$pvalue <= 0.05){
+    coef.lmfit1[1,]$sig <- "Intercept Significant."
+}else {coef.lmfit1[1,]$sig <- "Intercept not Significant."}
+
+
+# footnote significance codes
+names(coef.lmfit1)[7] <- "Significance at 5 percent error"
+fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
+
+number= fn1
+
+# create table
+cat("\n \\pagebreak \n",fill=TRUE)
+opts <- options(knitr.kable.NA = "")
+x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption="Parameter Estimates", longtable = T)
+footnote(x, number = number) %>%
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
 

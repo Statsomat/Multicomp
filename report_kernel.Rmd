@@ -254,7 +254,6 @@ if (nrow(as.data.frame(df_factorized[complete.cases(df_factorized),])) < 10){
 }
 
 
-#Weiter nur mit vollständigem Datensatz ohne NAs
 df_factorized<-as.data.frame(df_factorized[complete.cases(df_factorized),])
 ```
 

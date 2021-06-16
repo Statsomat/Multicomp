@@ -369,16 +369,30 @@ plot(lmfit)
 
 
 ```{r, eval=eval}
+cat("\n# Multiple Comparison \n", fill=TRUE)
+cat("\\small ", fill=TRUE)
+cat("## Control Dunnet \n", fill=TRUE)
+
 # MCPs with a control Dunnet
 ## Construct input to mcp2 function which is an update of the original mcp function 
-key <- modelsplit[2]
+
+#TODO interessierender Faktor mit interessierendem Faktor Level aus modelsplit holen und zu Nullhypothesen machen
+#interessierender Faktor
+key <- modelsplit[2] 
+#Liste an der Stelle des interessierenden Faktors ist Dunnet
 mylist <- list()
 mylist[[key]] <- "Dunnet"
-names(mylist) <- key
-output_mcp <- glht(lmfit, linfct = mcp2(mylist), alternative = "less")
+names(mylist) <- key 
+#Dunnet Kontrast Multipler Vergleich der Mittelwerte, Vergleiche nach Dunnet nur nach einer Kontrollgruppe
+# glht nimmt lineares Modell, linfct sind Nullhypthesen, test ob erstes Level kleiner als der Rest
+output_mcp <- glht(lmfit, linfct = mcp2(mylist), alternative = "less") 
+#TODO Tabelle schön darstellen
 summary(output_mcp)
-confint(output_mcp, level = 0.95)
+confint(output_mcp, level = 0.95) #simultane Konfidenzintervall untere obere Grenze 
+#TODO Interpretation der Tabelle anfügen, ob adjustierte p-Werte signifikant für Faktorlevel
+# Output Schätzer , Fehler, adjustierte p-Werte, beim einschrittigen Verfahren
 #plot(output_mcp, main = "", ylim = c(min(df$x1), max(df$x1)), xlab = "x1")
+
 ```
 
 

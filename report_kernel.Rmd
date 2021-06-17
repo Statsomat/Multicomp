@@ -249,8 +249,8 @@ df_factorized <- cbind(df_cont, df_cat_factor)
 
 
 ```{r descplots, dev="cairo_pdf", eval=eval, results='asis'}
-cat("\n# Descriptive Plots \n", fill=TRUE)
-cat("\\small ", fill=TRUE)
+cat("# Descriptive Plots \n", fill=TRUE)
+cat("\n \\small \n ", fill=TRUE)
 cat("## Dependent Variable \n", fill=TRUE)
 
 #Histogram and Boxplot for DV
@@ -304,7 +304,7 @@ df_cont_iv <- df_cont[which(colnames(df_cont)!=lhs(modelfunction))]
 if (ncol(df_cont_iv)>0) {
   cat("## Dependent against Covariates \n", fill=TRUE)
   if (ncol(df_cont_iv)==1) {
-   plot(x =  df_cont_iv[,1],y=x, col = "#2fa42d", main=paste("Scatterplot of", colnames(df_cont_iv))
+   plot(x =  df_cont_iv[,1],y=x, col = "#2fa42d", main=paste0("Scatterplot of ", colnames(df_cont_iv))
         , xlab = colnames(df_cont_iv), ylab = lhs(modelfunction))
   }else if(ncol(df_cont_iv)>1){
     chart.Correlation(df_cont_iv, col = "#2fa42d", main=paste("Correlation Plot of numerical independent Variables"))
@@ -319,7 +319,7 @@ if(ncol(df_cat)>=2){
 
   for (i in 1:(ncol(df_cat)-1)) {
     for (j in (i+1):ncol(df_cat)) {
-      interaction.plot(df_cat[,i], df_cat[,j], x, xlab= colnames(df_cat)[i], trace.label = colnames(df_cat)[j], ylab=paste("mean of", lhs(modelfunction)), col = "#2fa42d",main=paste("Interaction Plot of ", colnames(df_cat)[i], " and ", colnames(df_cat)[j]))
+      interaction.plot(df_cat[,i], df_cat[,j], x, xlab= colnames(df_cat)[i], trace.label = colnames(df_cat)[j], ylab=paste("mean of", lhs(modelfunction)), col = "#2fa42d",main=paste0("Interaction Plot of ", colnames(df_cat)[i], " and ", colnames(df_cat)[j]))
       cat("\n \\newline \n ", fill=TRUE)
     }
   }
@@ -353,11 +353,14 @@ lmfit <- lm(modelfunction, data = df_factorized)
 
 ```{r Parametertable, dev="cairo_pdf", eval=eval, results='asis'}
 # Table Parameter estimates
+cat("\n \\pagebreak \n",fill=TRUE)
+cat("\n# Analysis of variance  \n", fill=TRUE)
+
 coef.lmfit <- as.data.frame(summary(lmfit)$coefficients)
 coef.lmfit1 <- data.frame("Variable"=rownames(coef.lmfit),"Value"=coef.lmfit$Estimate, 
-                          "Std.Error"=coef.lmfit$'Std. Error',"t.value"=coef.lmfit$'t value',
-                          "pvalue"=coef.lmfit$'Pr(>|t|)')
-coef.lmfit1$pvalue <- sapply(coef.lmfit1$pvalue,pformat)
+                          "Std.Error"=coef.lmfit$'Std. Error',"T.value"=coef.lmfit$'t value',
+                          "P.value"=coef.lmfit$'Pr(>|t|)')
+coef.lmfit1$'P.value' <- sapply(coef.lmfit1$'P.value',pformat)
 
 # column significance levels
 coef.lmfit1$'sign. level' <- NA
@@ -366,15 +369,15 @@ coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.001)] <- "**"
 coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.01)] <- "*"
 coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.05)] <- "."
 coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.1)] <- " "
-coef.lmfit1$'sign. level'[which(is.na(coef.lmfit1$pvalue))] <- "-"
+coef.lmfit1$'sign. level'[which(is.na(coef.lmfit1$'P.value'))] <- "-"
 
 names(coef.lmfit1)[6] <- paste0(names(coef.lmfit1)[6], footnote_marker_number(1, "latex"))
 
 
 # column declaration of significance
-coef.lmfit1$sig <- NA
+coef.lmfit1$sig <- NA  
 for (i in 2:nrow(coef.lmfit1)) {
-  if(coef.lmfit1[i,]$pvalue <= 0.05){
+  if(coef.lmfit1[i,]$'P.value' <= 0.05){
     if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
       coef.lmfit1[i,]$sig <- paste0("Interaction Significant. Effect ",sub(":", paste0(" vs. ","reference ", "depends on "), coef.lmfit1[i,]$Variable),".")
                               
@@ -388,7 +391,7 @@ for (i in 2:nrow(coef.lmfit1)) {
 }
  
 
-if(coef.lmfit1[1,]$pvalue <= 0.05){
+if(coef.lmfit1[1,]$'P.value' <= 0.05){
     coef.lmfit1[1,]$sig <- "Intercept Significant."
 }else {coef.lmfit1[1,]$sig <- "Intercept not Significant."}
 
@@ -400,9 +403,9 @@ fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% er
 number= fn1
 
 # create table
-cat("\n \\pagebreak \n",fill=TRUE)
+cat("## Effect of the separate expressions of the given variables (Parameter Estimates) \n", fill=TRUE)
 opts <- options(knitr.kable.NA = "")
-x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption="Parameter Estimates", longtable = T)
+x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 footnote(x, number = number) %>%
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```

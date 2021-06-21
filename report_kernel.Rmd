@@ -455,12 +455,15 @@ summary(output_mcp, test = adjusted(type = "free"))
 ```
 
 
+
 ```{r, eval=FALSE}
 # MCPs with a control Dunnet Sandwich
 output_sandwich <- glht(lmfit, linfct = mcp2(mylist), alternative = "less", vcov = sandwich)
-summary(output_sandwich)
+sum.sandw <- summary(output_sandwich)
+sandw.df <- data.frame("Variable"=sum.sandw$test$coefficients,"sigma"=sum.sandw$test$sigma, "t-Test"=sum.sandw$test$tstat, "pvalues"=sum.sandw$test$pvalues)
+
 confint(output_sandwich, level = 0.95)
-#plot(output_sandwich, main = "", ylim = c(min(df$x1), max(df$x1)), xlab = "x1")
+plot(output_sandwich, main = "KI Sandwich", xlab = "x1")  # ylim = c(min(df$x1), max(df$x1)),
 ```
 
 

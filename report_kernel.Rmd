@@ -263,11 +263,11 @@ if(df_table[1,'P.value']<0.05){
 for(i in 2:nrow(df_table)){
   ifelse(df_table[i,'P.value']<=0.05,
          if(str_detect(rownames(df_table)[i], ":")){
-      df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of interaction ", rownames(df_table)[i], ".")
+      df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", rownames(df_table)[i], "statistically significant.")
          }else{
          df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", rownames(df_table)[i], ".")},
          if(str_detect(rownames(df_table)[i], ":")){
-      df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of interaction ", rownames(df_table)[i], ".")
+      df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", rownames(df_table)[i], "is not statistically significant.")
          }else{
          df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", rownames(df_table)[i], ".")
          }

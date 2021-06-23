@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 report_kernel.pdf
+report.Rmd
+wrapper.R

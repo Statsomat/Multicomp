@@ -1,5 +1,6 @@
 ---
 title: "Multiple Comparison Procedures To A Control"
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -11,6 +12,8 @@ library(kableExtra) # for tables
 library(multcomp) # mcp
 library(sandwich) # sandwich
 library(car) # type II Anova tests
+library(HH) # hovplot 
+library(onewaytests)
 ```
 
 
@@ -275,10 +278,28 @@ plot(lmfit)
 ## Partial plots
 ```
 
-
-```{r, dev="cairo_pdf", eval=eval}
+\pagebreak
+```{r, dev="cairo_pdf", eval=eval, results="asis", fig.width=5, fig.height=3, fig.cap="Homogeneity of Variance Plot", include=TRUE}
 # Diagnostic Checks 
 ## Homogeneity of Variances 
+cat("# Homogeneity of Variances", fill=TRUE)
+eval <- oneway; oneway <- FALSE
+alpha <- 0.05
+if(dim(df_factorized)[2]==2) oneway <-  TRUE
+if (oneway == TRUE) hovPlot(as.formula(modelfunction), data=df_factorized)
+if (oneway == TRUE) {
+  cat("\n \\newline \n Homogeneity of Variances Plot: ", fill=FALSE)
+  cat("The observed data are represented by y. In the fist of the three plots, there are boxplots of each level of the independent variable. \n In the second plot y is subtracted by the median of the observed data, such that each median takes the value 0. \n  In the third plot the absolute deviations from the median to y are shown. The Brown and Forsyth test statistic is the F statistic resulting from an ordinary one-way analysis of variance on the data points in the third panel.", fill=TRUE)
+  bf <- bf.test(as.formula(modelfunction), data=df_factorized)
+  if (bf$p.value <= bf$alpha) cat("Homogeneity of Variances is not given.", fill=TRUE) else cat("Homogeneity of Variances is given.", fill=TRUE)
+  lev = leveneTest(as.formula(modelfunction), data=df_factorized)
+  if(lev$`Pr(>F)`[1]<= alpha) cat("Homogeneity of Variances is not given.", fill=TRUE) else cat("Homogeneity of Variances is given.", fill=TRUE)
+} else {
+  if(as.formula(modelfunction)[2] =! vars1[i]) paste(as.formula(modelfunction)[2], as.formula(modelfunction)[1], vars1[i], sep="")
+  lev = leveneTest(breaks ~ interaction(wool,tension), data=df_factorized)
+  if(lev$`Pr(>F)`[1]<= alpha) cat("Homogeneity of Variances is not given.", fill=TRUE) else cat("Homogeneity of Variances is given.", fill=TRUE)
+}
+
 ## Normality
 ## Correlated Errors
 ## Outliers

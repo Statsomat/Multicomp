@@ -1,32 +1,34 @@
 ---
 title: "Multiple Comparison Procedures To A Control"
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE, warning=FALSE, fig.width=8)
-
 # Import libraries used further below
 library(knitr) # for tables
 library(kableExtra) # for tables 
 library(multcomp) # mcp
 library(sandwich) # sandwich
 library(car) # type II Anova tests
-library(stringr)
+library(psych) # multi.hist
+library(shiny) #safeError
+library(formula.tools) #for formula lhs
+library(PerformanceAnalytics) #Scatterplot
+library(rlang) #as_string for cast
+library(stringr) # for strings
 ```
 
 
 ```{r getdata}
 # Get data
 df <- params$data
-
 # Save a copy for other purposes 
 df_code <- df
-
 # Initialize evaluation of chunks
 eval0 <- FALSE
 eval <- FALSE
 eval_rows <- FALSE
-
 # Apply selection of variables 
 tryCatch({
   
@@ -35,14 +37,11 @@ tryCatch({
   
   # Initialize next computations
   eval0 <- TRUE
-
 }, error=function(e) {
   
   stop(safeError("Please try other column names for the following columns: "))
 }
-
 )
-
 # Post error for selection 
 if (length(setdiff(params$vars1,colnames(df))) >0) {
   equal <- intersect(colnames(df),params$vars1)
@@ -59,7 +58,6 @@ tryCatch({
 col_names_missing <- sapply(df, function(col) all(is.na(col)))
 df[ ,col_names_missing] <- list(NULL)
 df_list <- df 
-
 # Drop empty rows
 rowsums <- data.frame(sapply(df,is.na))
 if (length(which(rowSums(rowsums) == dim(df)[2])) != 0L){
@@ -68,23 +66,17 @@ if (length(which(rowSums(rowsums) == dim(df)[2])) != 0L){
   length_non_complete <- length(which(rowSums(rowsums) == dim(df)[2]))
   df <- df[-rows_drop, ,drop=FALSE]
 }
-
 # Convert logical variables to character
 cols_logical <- sapply(df, function(col) is.logical(col))
 df[ ,cols_logical] <- sapply(df[ ,cols_logical], as.character)
-
 # Convert numerical variables with less than 7 unique values to character (missing values omitted)
 col_names_numeric <- sapply(df, function(col) length(unique(na.omit(col))) < 7L & is.numeric(col))
 df[ ,col_names_numeric] <- sapply(df[ ,col_names_numeric], as.character)
-
 # Extract numerical variables 
 df_num <- df[which(sapply(df, is.numeric) == 1L)]
-
 # Extract approximate continuous variables and non-continuous var
 if (ncol(df_num)>0){
-
   rateunique_df <- sapply(df_num, function(col) continuous(col))
-  cols_continuous <- names(which(rateunique_df == TRUE))
   
   if (params$cont_crit == "Conservative"){
     df_cont <- df_num[,rateunique_df,drop=FALSE] # numeric, continuous resp. assumption fulfilled 
@@ -93,11 +85,11 @@ if (ncol(df_num)>0){
     df_cont <- df_num 
   }
   
+   cols_continuous <- colnames(df_cont)
+  
 } 
-
 # Extract character variables 
 df_factor <- df[which(sapply(df, is.character) == 1L)]
-
 # Categorical 
 if (exists("df_noncont")){
   df_cat <- merge(df_factor, df_noncont, by="row.names")
@@ -106,35 +98,29 @@ if (exists("df_noncont")){
 } else {
   df_cat <- df_factor
 }
-
 # Initialize next computations
 eval <- TRUE
-
 }, error=function(e) {
   
   stop(safeError("Dataset cannot be prepared. Please check the data for consistency."))
   
 }
-
 )
 ```
 
 
 ```{r basic, results="asis", eval=eval}
 # Chunk with first page of basic information
-
 cat("\n# Basic Information", fill=TRUE)
 cat("\\small ", fill=TRUE)
 cat("Automatic statistics for the file:", fill=TRUE)
 dataname <- params$filename[1]
 kable(dataname, col.names = "File", linesep = '', longtable=T) 
-
 cat("Your selection for the encoding:", fill=TRUE)
 if (params$fencoding=="unknown"){
   cat("Auto")
 } else {cat("UTF-8")}
 cat("\\newline",fill=TRUE) 
-
 cat("Your selection for the decimal character:", fill=TRUE)
 if (params$decimal=="auto"){
   cat("Auto")
@@ -144,18 +130,14 @@ cat("\\newline",fill=TRUE)
 cat("Observations (rows with at least one non-missing value): ", fill=TRUE)
 cat(dim(df)[1])
 cat("\\newline",fill=TRUE) 
-
 # Missing rows
 if (exists("length_non_complete")){
   cat("Number of rows that are dropped because they contain no values (all values are missing):", length_non_complete)
   cat("\\newline",fill=TRUE) 
 }
-
 cat("Variables (columns with at least one non-missing value): ", fill=TRUE)
 cat(dim(df_list)[2])
 cat("\\newline",fill=TRUE) 
-
-
 # Missing columns
 if (exists("col_names_missing")){
   if (sum(col_names_missing) != 0L){
@@ -163,8 +145,6 @@ if (exists("col_names_missing")){
     cat("\\newline",fill=TRUE) 
   } 
 }
-
-
 if (exists("df_cont")){
   cat("Variables considered continuous: ", fill=TRUE)
   if (ncol(df_cont)>0){
@@ -173,11 +153,11 @@ if (exists("df_cont")){
       kable_styling(font_size = 8, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
   } else {
     cat("0", fill=TRUE)
-    cat("\\newline",fill=TRUE) 
+    cat("\\newline",fill=TRUE)
+    cat("Error: There are no continuous variables of interest in the dataset. ")
+    eval <- FALSE
   }
 }
-
-
 if (exists("df_cat")){
   cat("Variables considered categorical: ", fill=TRUE)
   if (ncol(df_cat)>0){
@@ -187,6 +167,8 @@ if (exists("df_cat")){
   } else {
     cat("0", fill=TRUE)
     cat("\\newline",fill=TRUE) 
+    cat("Error: There are no factors in the dataset. ")
+    eval <- FALSE
   }
 }
 ```
@@ -198,35 +180,123 @@ check_reading <- function(col){
   numeric <- !is.na(as.numeric(col))
   return(sum(numeric)/sum(!is.na(col)))
 }
-
 df_char2 <- df2[which(sapply(df2, is.character) == 1L)]
 numeric_percent <- sapply(df_char2, function(col) check_reading(col))
-
 if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
   cat("**Warning: More than 90% of the values of these columns could be treated as numeric. Nevertheless, because of some values or the selected decimal character, the columns must be treated as discrete. Are all the values plausible? Please check the data once more before uploading! Column(s):**", names(numeric_percent[(numeric_percent>0.9)]), fill=TRUE)
 }
-
 ```
 
 
 \pagebreak
 
+```{r modelinformation, eval=eval, results="asis"}
+cat("# Model Information", fill=TRUE)
+cat("You defined the following linear model:", fill=TRUE)
+cat(modelsplit[1])
+cat("\\newline",fill=TRUE)
+cat("You are interested in the factor:", fill=TRUE)
+cat(modelsplit[2])
+cat("\\newline",fill=TRUE)
+cat("You are interested in pairwise comparisons to the control factor level:", fill=TRUE)
+cat(modelsplit[3])
+```
+
+
 ```{r factoring, eval=eval}
 # Generate dataframe with factorized categorical variables 
 df_cat_factor <- lapply(df_cat, as.factor)
-df_factorized <- cbind(df_cont, df_cat_factor)
+df_factorized <- cbind(df_cont, df_cat_factor)  
 ```
+
 
 
 ```{r missings, results="asis", eval=eval}
 # Notice for missings (only <10% missings allowed, only complete cases treated)
+# Missings  > 10%
+complete_rate <- sapply(df_factorized, function(col) 1-(sum(is.na(col)) / dim(df)[1])) 
+if (length(which(complete_rate < 0.90)) != 0L){
+  cat("**Error: Execution stop because of limit on missing values. There exist continuous variables with more than 10% missing values. This app allows max 10% missing values per observed variable. Please reconsider your data before using this app. **")
+  miss_var <- names(which(complete_rate < 0.90)) 
+  eval <- FALSE
+  knitr::kable(miss_var, col.names = "Variable(s) with more than 10% missing values", linesep = '', longtable = T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+}
+
+if (nrow(as.data.frame(df_factorized[complete.cases(df_factorized),])) < 10){
+  cat("**Error: Minimum 10 complete cases required. **")
+  eval <- FALSE
+}
+
+
+df_factorized<-as.data.frame(df_factorized[complete.cases(df_factorized),])
 ```
 
 
-```{r descplots, dev="cairo_pdf", eval=eval}
-# Descriptive plots 
-# Plots for the DV
-# Bivariate plots DV vs IV 
+```{r descplots, dev="cairo_pdf", eval=eval, results='asis'}
+cat("# Descriptive Plots \n", fill=TRUE)
+cat("\n \\small \n ", fill=TRUE)
+cat("## Dependent Variable \n", fill=TRUE)
+#Histogram and Boxplot for DV
+modelfunction = as.formula(modelsplit[1])
+x <- unlist(df_factorized[which(colnames(df_factorized)==lhs(modelfunction))])
+x <- as.numeric(x)
+main = paste("Histogram of",lhs(modelfunction))
+ylab="Relative Frequency"
+xlab= as_string(lhs(modelfunction))
+freq=FALSE
+bcol="#2fa42d"
+dcol=c("#396e9f","#396e9f")
+dlty=c("dotted", "solid")
+breaks=21 
+  
+h <- hist(x, plot=FALSE, breaks=breaks)
+m <- mean(x, na.rm=TRUE)
+s <- sd(x, na.rm=TRUE)
+d <- density(x, na.rm=TRUE)
+# Set nice x and y axis limits
+xlims <- pretty(c(floor(h$breaks[1]),ceiling(last(h$breaks))))
+ymax <- max(h$density)
+dmax <- max(d$y)
+ymax <- max(ymax,dmax)
+# Plots
+plot(h, freq=freq, ylim=c(0, ymax*1.2), ylab=ylab, xlab=xlab, main=main, col=bcol, xlim = c(min(xlims), max(xlims)))
+lines(d, lty=dlty[1], col=dcol[1])
+curve(dnorm(x,m,s), add=TRUE, lty=dlty[2], col=dcol[2])
+cat("\n \\newline \n ", fill=TRUE)
+boxplot(x, col = "#2fa42d", main = paste("Boxplot of",lhs(modelfunction)),
+          xlab=paste(lhs(modelfunction)), horizontal = TRUE)
+cat("\n \\pagebreak \n",fill=TRUE)
+# Boxplot for categorical IV
+cat("## Dependent Against Categorical Factors \n", fill=TRUE)
+for (i in 1:ncol(df_cat)) {
+    boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
+  cat("\n \\pagebreak \n",fill=TRUE)
+}
+cat("\n \\pagebreak \n",fill=TRUE)
+# Scatterplot for numerical IV
+df_cont_iv <- df_cont[which(colnames(df_cont)!=lhs(modelfunction))]
+if (ncol(df_cont_iv)>0) {
+  cat("## Dependent against Covariates \n", fill=TRUE)
+  if (ncol(df_cont_iv)==1) {
+   plot(x =  df_cont_iv[,1],y=x, col = "#2fa42d", main=paste0("Scatterplot of ", colnames(df_cont_iv))
+        , xlab = colnames(df_cont_iv), ylab = lhs(modelfunction))
+  }else if(ncol(df_cont_iv)>1){
+    chart.Correlation(df_cont_iv, col = "#2fa42d", main=paste("Correlation Plot of numerical independent Variables"))
+  }
+}
+cat("\n \\pagebreak \n",fill=TRUE)
+# Interaction Plot
+if(ncol(df_cat)>=2){
+  cat("## Interaction Plot for Factors \n", fill=TRUE)
+  cat("\n Note: The more parallel the lines, the less likely is the significance of the interaction of the factors. \n", fill=TRUE)
+  for (i in 1:(ncol(df_cat)-1)) {
+    for (j in (i+1):ncol(df_cat)) {
+      interaction.plot(df_cat[,i], df_cat[,j], x, xlab= colnames(df_cat)[i], trace.label = colnames(df_cat)[j], ylab=paste("mean of", lhs(modelfunction)), col = "#2fa42d",main=paste0("Interaction Plot of ", colnames(df_cat)[i], " and ", colnames(df_cat)[j]))
+      cat("\n \\newline \n ", fill=TRUE)
+    }
+  }
+}
 ```
 
 
@@ -234,50 +304,83 @@ df_factorized <- cbind(df_cont, df_cat_factor)
 # Model information
 modelfunction <- modelsplit[1]
 factor_index <- which(colnames(df_factorized) == modelsplit[2])
-
 ## New reference for the comparison 
 df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = modelsplit[3])
+```
 
+```{r linearReg, eval=eval}
 ## Set effect coding for the rest of the factors
-## sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
+##sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
+for (i in 1:ncol(df_factorized)) {
+  if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
+}
+#linear Regression
 lmfit <- lm(modelfunction, data = df_factorized)
 ```
 
+```{r Parametertable, dev="cairo_pdf", eval=eval, results='asis'}
+# Table Parameter estimates
+cat("\n \\pagebreak \n",fill=TRUE)
+cat("\n# Analysis of variance  \n", fill=TRUE)
 
-```{r type3, dev="cairo_pdf", eval=eval, results='asis'}
-# Type III tests 
-a = Anova(lmfit, type=3)
-#Create dataframe
-df_table <- data.frame("Variable"=rownames(a),"Sum.Sq"=a$`Sum Sq`,"Df"=a$Df,"F.value"=a$`F value`,"P.value"=a$'Pr(>F)')
-#format p-value column to p-value
-df_table$P.value <- sapply(df_table$P.value,pformat)
-#add a new column Interpretation
-df_table$'Interpretation (5% error)' <- NA
-#label intercept line
-if(df_table[1,'P.value']<0.05){
-  df_table[1,'Interpretation (5% error)']='Intercept significantly different from zero.'
-}else{df_table[1,'Interpretation (5% error)']='Intercept not significantly different from zero.'}
+coef.lmfit <- as.data.frame(summary(lmfit)$coefficients)
+coef.lmfit1 <- data.frame("Variable"=rownames(coef.lmfit),"Value"=coef.lmfit$Estimate, 
 
-#make entries dependent on p-value
-for(i in 2:nrow(df_table)){
-  ifelse(df_table[i,'P.value']<=0.05,
-         if(str_detect(rownames(df_table)[i], ":")){
-      df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", rownames(df_table)[i], "statistically significant.")
-         }else{
-         df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", rownames(df_table)[i], ".")},
-         if(str_detect(rownames(df_table)[i], ":")){
-      df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", rownames(df_table)[i], "is not statistically significant.")
-         }else{
-         df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", rownames(df_table)[i], ".")
-         }
-      )
+                          "Std.Error"=coef.lmfit$'Std. Error',"T.value"=coef.lmfit$'t value',
+                          "P.value"=coef.lmfit$'Pr(>|t|)')
+coef.lmfit1$'P.value' <- sapply(coef.lmfit1$'P.value',pformat)
+
+
+# column significance levels
+coef.lmfit1$'sign. level' <- NA
+coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') <= 0.001)] <- "***"
+coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.001)] <- "**"
+coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.01)] <- "*"
+coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.05)] <- "."
+coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.1)] <- " "
+
+coef.lmfit1$'sign. level'[which(is.na(coef.lmfit1$'P.value'))] <- "-"
+
+
+names(coef.lmfit1)[6] <- paste0(names(coef.lmfit1)[6], footnote_marker_number(1, "latex"))
+# column declaration of significance
+coef.lmfit1$sig <- NA  
+for (i in 2:nrow(coef.lmfit1)) {
+  if(coef.lmfit1[i,]$'P.value' <= 0.05){
+    if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
+      coef.lmfit1[i,]$sig <- paste0("Interaction Significant. Effect ",sub(":", paste0(" vs. ","reference ", "depends on "), coef.lmfit1[i,]$Variable),".")
+                              
+    }else coef.lmfit1[i,]$sig <- paste0("Significant. A Difference between the effect of ", 
+                                        coef.lmfit1[i,]$Variable, " and its reference.")
+  }else{ 
+    if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
+      coef.lmfit1[i,]$sig <- paste0("Interaction not Significant. Effect ",sub(":", paste0(" vs. ","reference ", "don't depends on "), coef.lmfit1[i,]$Variable),".")
+    }else coef.lmfit1[i,]$sig <- paste0("Not Significant. No difference between the effect of ",coef.lmfit1[i,]$Variable, " and its reference.")}
+     
 }
+ 
 
-#plot result including heading
-cat("## Total influence of factors (ANOVA Type III) \n", fill=TRUE)
-options(knitr.kable.NA = '')
-x1 <- knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
-kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+
+if(coef.lmfit1[1,]$'P.value' <= 0.05){
+
+    coef.lmfit1[1,]$sig <- "Intercept Significant."
+}else {coef.lmfit1[1,]$sig <- "Intercept not Significant."}
+# footnote significance codes
+names(coef.lmfit1)[7] <- "Significance at 5 percent error"
+fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
+number= fn1
+# create table
+cat("## Effect of the separate expressions of the given variables (Parameter Estimates) \n", fill=TRUE)
+opts <- options(knitr.kable.NA = "")
+x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
+footnote(x, number = number) %>%
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+```
+
+
+```{r type3, eval=eval}
+# Type III tests 
+Anova(lmfit, type=3)
 ```
 
 
@@ -285,7 +388,6 @@ kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HO
 # Diagnostic plots 
 layout(matrix(c(1,2,3,4),2,2)) 
 plot(lmfit) 
-
 ## Partial plots
 ```
 
@@ -313,13 +415,13 @@ confint(output_mcp, level = 0.95)
 ```
 
 
-```{r, eval=eval}
+```{r, eval=FALSE}
 # MCPs with a control Dunnet step-down 
 summary(output_mcp, test = adjusted(type = "free"))
 ```
 
 
-```{r, eval=eval}
+```{r, eval=FALSE}
 # MCPs with a control Dunnet Sandwich
 output_sandwich <- glht(lmfit, linfct = mcp2(mylist), alternative = "less", vcov = sandwich)
 summary(output_sandwich)
@@ -328,7 +430,7 @@ confint(output_sandwich, level = 0.95)
 ```
 
 
-```{r, eval=eval}
+```{r, eval=FALSE}
 # MCPs with a control Dunnet step-down, Sandwich
 summary(output_sandwich, test = adjusted(type = "free"))
 ```

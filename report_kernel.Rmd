@@ -10,7 +10,7 @@ library(knitr) # for tables
 library(kableExtra) # for tables 
 library(multcomp) # mcp
 library(sandwich) # sandwich
-library(car) # type II Anova tests
+library(car) # type III Anova tests
 library(psych) # multi.hist
 library(shiny) #safeError
 library(formula.tools) #for formula lhs
@@ -378,9 +378,40 @@ footnote(x, number = number) %>%
 ```
 
 
-```{r type3, eval=eval}
+```{r type3, dev="cairo_pdf", eval=eval, results='asis'}
 # Type III tests 
-Anova(lmfit, type=3)
+a = Anova(lmfit, type=3)
+#Create dataframe
+df_table <- data.frame("Variable"=rownames(a),"Sum.Sq"=a$`Sum Sq`,"Df"=a$Df,"F.value"=a$`F value`,"P.value"=a$'Pr(>F)')
+#format p-value column to p-value
+df_table$P.value <- sapply(df_table$P.value,pformat)
+#add a new column Interpretation
+df_table$'Interpretation (5% error)' <- NA
+#label intercept line
+if(df_table[1,'P.value']<0.05){
+  df_table[1,'Interpretation (5% error)']='Intercept significantly different from zero.'
+}else{df_table[1,'Interpretation (5% error)']='Intercept not significantly different from zero.'}
+
+#make entries dependent on p-value
+for(i in 2:nrow(df_table)){
+  ifelse(df_table[i,'P.value']<=0.05,
+         if(str_detect(rownames(df_table)[i], ":")){
+      df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", rownames(df_table)[i], "statistically significant.")
+         }else{
+         df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", rownames(df_table)[i], ".")},
+         if(str_detect(rownames(df_table)[i], ":")){
+      df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", rownames(df_table)[i], "is not statistically significant.")
+         }else{
+         df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", rownames(df_table)[i], ".")
+         }
+      )
+}
+
+#plot result including heading
+cat("## Total influence of factors (ANOVA Type III) \n", fill=TRUE)
+options(knitr.kable.NA = '')
+x1 <- knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
+kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
 

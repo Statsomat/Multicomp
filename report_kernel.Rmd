@@ -18,6 +18,7 @@ library(formula.tools) #for formula lhs
 library(PerformanceAnalytics) #Scatterplot
 library(rlang) #as_string for cast
 library(stringr) # for strings
+library(tibble) #rownames_to_columns
 ```
 
 
@@ -340,6 +341,7 @@ factor_index <- which(colnames(df_factorized) == modelsplit[2])
 df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = modelsplit[3])
 ```
 
+
 ```{r linearReg, eval=eval}
 ## Set effect coding for the rest of the factors
 ##sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
@@ -347,9 +349,15 @@ for (i in 1:ncol(df_factorized)) {
   if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
 }
 
+#Set factor level of interest as first level of factor of interest
+key <- modelsplit[2] 
+factorlevel <- modelsplit [3]
+levels(df_factorized[,colnames(df_factorized)==key]) <- levels(relevel(df_factorized[,colnames(df_factorized)==key], factorlevel))
+
 #linear Regression
 lmfit <- lm(modelfunction, data = df_factorized)
 ```
+
 
 ```{r Parametertable, dev="cairo_pdf", eval=eval, results='asis'}
 # Table Parameter estimates
@@ -420,6 +428,7 @@ layout(matrix(c(1,2,3,4),2,2))
 plot(lmfit) 
 
 ## Partial plots
+
 ```
 
 
@@ -432,30 +441,116 @@ plot(lmfit)
 ```
 
 
-```{r, eval=eval}
-cat("\n# Multiple Comparison \n", fill=TRUE)
+```{r Dunnet Contrasts, dev= "cairo_pdf", eval=eval, results='asis'}
+#todor::todor()
+
+
+#TODO mit anderen Datensätzen testen
+cat("\n \\pagebreak \n",fill=TRUE)
+
+cat("\n# Multiple Comparisons of Means to a Control \n", fill=TRUE)
 cat("\\small ", fill=TRUE)
-cat("## Control Dunnet \n", fill=TRUE)
+cat("## Dunnet \n", fill=TRUE)
 
 # MCPs with a control Dunnet
 ## Construct input to mcp2 function which is an update of the original mcp function 
 
-#TODO interessierender Faktor mit interessierendem Faktor Level aus modelsplit holen und zu Nullhypothesen machen
-#interessierender Faktor
 key <- modelsplit[2] 
-#Liste an der Stelle des interessierenden Faktors ist Dunnet
+factorlevel <- modelsplit [3]
+lev <- levels(df_factorized[,colnames(df_factorized)==key])
+side <- modelsplit[4]
+
+if(side=="less"){symb <- ">="}
+if(side=="greater"){symb <- "<="}
+if(side=="two.sided"){symb <- "="}
+
+#Description above
+if(side == "two.sided"){
+  cat(paste("Test whether the factor level ", factorlevel, " of the factor ", key, " is different from the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,"=0."))  
+}else{
+  cat(paste("Test whether the factor level ", factorlevel, " of the factor ", key, " is ", side, " than the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,symb,"0." ), fill=TRUE)
+}
+
+#compute multiple comparison
 mylist <- list()
 mylist[[key]] <- "Dunnet"
 names(mylist) <- key 
-#Dunnet Kontrast Multipler Vergleich der Mittelwerte, Vergleiche nach Dunnet nur nach einer Kontrollgruppe
-# glht nimmt lineares Modell, linfct sind Nullhypthesen, test ob erstes Level kleiner als der Rest
-output_mcp <- glht(lmfit, linfct = mcp2(mylist), alternative = "less") 
-#TODO Tabelle schön darstellen
-summary(output_mcp)
-confint(output_mcp, level = 0.95) #simultane Konfidenzintervall untere obere Grenze 
-#TODO Interpretation der Tabelle anfügen, ob adjustierte p-Werte signifikant für Faktorlevel
-# Output Schätzer , Fehler, adjustierte p-Werte, beim einschrittigen Verfahren
-#plot(output_mcp, main = "", ylim = c(min(df$x1), max(df$x1)), xlab = "x1")
+
+output_mcp <- glht(lmfit, linfct = mcp2(mylist), alternative = side) 
+summcp<- summary(output_mcp)
+
+#pretty table
+glht_dunnet <- data.frame("Value"=summcp$test$coefficients, 
+                          "Std.Error"= summcp$test$sigma, "T-value"=summcp$test$tstat,
+                          "P.value"= as.numeric(summcp$test$pvalues))
+
+rownames(glht_dunnet) <- paste(rownames(glht_dunnet),symb,"0")
+
+glht_dunnet$'Sign. level' <- NA
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value ) <= 0.001)] <- "***"
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.001)] <- "**"
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.01)] <- "*"
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.05)] <- "."
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.1)] <- " "
+glht_dunnet$'Sign. level'[which(is.na(glht_dunnet$P.value))] <- "-"
+
+glht_dunnet$P.value <- sapply(glht_dunnet$P.value,pformat)
+
+names(glht_dunnet)[5] <- paste0(names(glht_dunnet)[5], footnote_marker_number(1, "latex"))
+
+#Interpretation
+#TODO Interpretation Dunnet anpassen nach H1
+glht_dunnet$sig <- NA
+for (i in 1:nrow(glht_dunnet)) {
+  if(glht_dunnet[i,]$P.value <= 0.05){
+    glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(3, "latex"))
+  }else{ 
+    glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
+}
+
+# footnote significance codes
+names(glht_dunnet)[6] <- "Significance at 5 percent Type I error"
+fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
+fn2 <- "H1 does not hold significantly."
+fn3 <-  "H1 holds significantly."
+number= c(fn1, fn2, fn3)
+
+#rownames to column 
+glht_dunnet <- rownames_to_column(glht_dunnet, var="Null Hypothesis") %>% head
+
+#Output table
+opts <- options(knitr.kable.NA = "")
+x <- knitr::kable(glht_dunnet, digits=2, escape = F, linesep = '', caption="Multiple Comparison: Dunnet Contrasts", longtable = T)
+footnote(x, number = number) %>%
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+
+#simoultanous confidence intervals 
+cat(paste("Simultaneous Confidence Intervals which includes the true value of the difference between the reference level ", factorlevel, " and the other levels of ", key), fill=TRUE)
+
+confmcp <- confint(output_mcp, level = 0.95) 
+conf_glht <- as.data.frame(confmcp$confint)
+colnames(conf_glht) <- c("Value", "Lower bound", "Upper bound")
+rownames(conf_glht) <- paste(rownames(conf_glht),symb,"0")
+
+conf_glht$sig <- NA
+for (i in 1:nrow(conf_glht)) {
+  if(sign(conf_glht$`Lower bound`)[i]==sign(conf_glht$`Upper bound`)[i]){
+    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(1, "latex") )
+  }else{ 
+    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
+}
+
+fn4 <- "Remark: Zero is not in the conidence interval."
+fn5 <- "Remark: Zero is in the confidence interval."
+number_2= c(fn4, fn5)
+
+colnames(conf_glht)[4] <- "Interpretation"
+conf_glht <- rownames_to_column(conf_glht, var="Null Hypothesis") %>% head
+
+opts <- options(knitr.kable.NA = "")
+x <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption="Simoultaneous Confidence Intervals: Dunnet Contrasts", longtable = T)
+footnote(x, number = number_2) %>% 
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 
 ```
 

@@ -78,7 +78,7 @@ df_num <- df[which(sapply(df, is.numeric) == 1L)]
 if (ncol(df_num)>0){
   rateunique_df <- sapply(df_num, function(col) continuous(col))
   
-  if (params$cont_crit == "Conservative"){
+  if (params$cont_crit == "Severe"){
     df_cont <- df_num[,rateunique_df,drop=FALSE] # numeric, continuous resp. assumption fulfilled 
     df_noncont <- df_num[,!rateunique_df,drop=FALSE] # numeric, non-continuous 
   } else {
@@ -190,7 +190,15 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 
 \pagebreak
 
-```{r modelinformation, eval=eval, results="asis"}
+```{r modelinformation, eval = eval, results = "asis"}
+
+# Split the text area containing the model information 
+model <- params$model
+modelsplit <- unlist(strsplit(model, split="\n"))
+modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
+modelsplit <- modelsplit[modelsplit != ""]
+
+# List model information
 cat("# Model Information", fill=TRUE)
 cat("You defined the following linear model:", fill=TRUE)
 cat(modelsplit[1])
@@ -198,7 +206,7 @@ cat("\\newline",fill=TRUE)
 cat("You are interested in the factor:", fill=TRUE)
 cat(modelsplit[2])
 cat("\\newline",fill=TRUE)
-cat("You are interested in pairwise comparisons to the control factor level:", fill=TRUE)
+cat("You are interested in pairwise comparisons to the reference level:", fill=TRUE)
 cat(modelsplit[3])
 ```
 
@@ -300,25 +308,33 @@ if(ncol(df_cat)>=2){
 ```
 
 
-```{r modelinfo, eval=eval}
-# Model information
-modelfunction <- modelsplit[1]
+```{r relevel, eval=eval}
+# Relevel factor of interest 
 factor_index <- which(colnames(df_factorized) == modelsplit[2])
-## New reference for the comparison 
 df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = modelsplit[3])
 ```
 
-```{r linearReg, eval=eval}
-## Set effect coding for the rest of the factors
-##sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
+```{r fitmodel, eval=eval}
+# Set effect coding for the rest of the factors, relevant for the type III Anova table 
 for (i in 1:ncol(df_factorized)) {
   if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
 }
-#linear Regression
-lmfit <- lm(modelfunction, data = df_factorized)
+
+# Fit Linear Model
+tryCatch({
+  modelfunction <- modelsplit[1]
+  lmfit <- lm(modelfunction, data = df_factorized)
+  ## Initialize next computations
+  eval2 <- TRUE
+}, error=function(e) {
+  
+  stop(safeError("Error: The model function could not be fitted to the data."))
+  
+}
+)
 ```
 
-```{r Parametertable, dev="cairo_pdf", eval=eval, results='asis'}
+```{r Parametertable, dev="cairo_pdf", eval = eval, results='asis'}
 # Table Parameter estimates
 cat("\n \\pagebreak \n",fill=TRUE)
 cat("\n# Analysis of variance  \n", fill=TRUE)

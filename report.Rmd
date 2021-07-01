@@ -32,19 +32,7 @@ header-includes:
 \pagebreak
 
 
-```{r, dev = "cairo_pdf", results = "asis", echo = FALSE}
-# Check model syntax 
-msyntax <- TRUE
-model <- params$model
-modelsplit <- unlist(strsplit(model, split="\n"))
-modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
-modelsplit <- modelsplit[modelsplit != ""]
-
-# Set stop errors if the lines (1,2,3) are not as expected 
-```     
-
-
-```{r child = 'report_kernel.Rmd', eval = msyntax}
+```{r child = 'report_kernel.Rmd', eval = TRUE}
 ```
 
 

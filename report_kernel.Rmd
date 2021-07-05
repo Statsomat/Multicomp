@@ -349,13 +349,9 @@ for (i in 1:ncol(df_factorized)) {
   if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
 }
 
-#Set factor level of interest as first level of factor of interest
-key <- modelsplit[2] 
-factorlevel <- modelsplit [3]
-levels(df_factorized[,colnames(df_factorized)==key]) <- levels(relevel(df_factorized[,colnames(df_factorized)==key], factorlevel))
-
 #linear Regression
 lmfit <- lm(modelfunction, data = df_factorized)
+
 ```
 
 
@@ -442,15 +438,14 @@ plot(lmfit)
 
 
 ```{r Dunnet Contrasts, dev= "cairo_pdf", eval=eval, results='asis'}
-#todor::todor()
 
-
-#TODO mit anderen Datensätzen testen
 cat("\n \\pagebreak \n",fill=TRUE)
 
 cat("\n# Multiple Comparisons of Means to a Control \n", fill=TRUE)
-cat("\\small ", fill=TRUE)
-cat("## Dunnet \n", fill=TRUE)
+#cat("\\small ", fill=TRUE)
+cat("Testing several null hypotheses at the same time at the significance level alpha increases the probability that at least one Type I error (false positive) will be made as the number of null hypotheses increases. This multiplicity problem is considered in multiple comparisons. In this case, the type I error is not controlled in every test for a null hypothesis, but the probability of at least one type I error is limited across all simultaneous tests. Using the adjusted p-value, the individual null hypotheses can be compared with the significance level alpha. Without multiple adjustment, reproducibility cannot be established.",fill=TRUE)
+
+cat("\n## Dunnet \n", fill=TRUE)
 
 # MCPs with a control Dunnet
 ## Construct input to mcp2 function which is an update of the original mcp function 
@@ -499,13 +494,22 @@ glht_dunnet$P.value <- sapply(glht_dunnet$P.value,pformat)
 names(glht_dunnet)[5] <- paste0(names(glht_dunnet)[5], footnote_marker_number(1, "latex"))
 
 #Interpretation
-#TODO Interpretation Dunnet anpassen nach H1
+
 glht_dunnet$sig <- NA
-for (i in 1:nrow(glht_dunnet)) {
-  if(glht_dunnet[i,]$P.value <= 0.05){
-    glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(3, "latex"))
-  }else{ 
-    glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
+if(side != "two.sided"){
+  for (i in 1:nrow(glht_dunnet)) {
+    if(glht_dunnet[i,]$P.value <= 0.05){
+      glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(3, "latex"))
+    }else{ 
+      glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
+  }
+}else{
+    for (i in 1:nrow(glht_dunnet)) {
+    if(glht_dunnet[i,]$P.value <= 0.05){
+      glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly different than ", factorlevel, footnote_marker_number(3, "latex"))
+    }else{ 
+      glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not different than " , lev[i+1], footnote_marker_number(2, "latex"))}
+  }
 }
 
 # footnote significance codes
@@ -516,6 +520,7 @@ fn3 <-  "H1 holds significantly."
 number= c(fn1, fn2, fn3)
 
 #rownames to column 
+colnames(glht_dunnet)[4] <- c("adjusted P.value")
 glht_dunnet <- rownames_to_column(glht_dunnet, var="Null Hypothesis") %>% head
 
 #Output table

@@ -128,33 +128,37 @@ shinyUI(fluidPage(
             ),
           
             
-            wellPanel(style = "background: #adc7de;", 
-                      
-                      h3("Select Variables (max 25)"),
-                      
-                      h5("Only blanks as missing values"),
-                      
-                      uiOutput("selection1")
-                    
-            ),
-            
             
             wellPanel(style = "background: #adc7de;", 
                       
-                      h3("Type Your Model Information"),
+                      h3("Model Information"),
                       
-                      h5("Overwrite the example in the text area below with your model information. "),
+                      tags$p("Model Formula (overwrite the example in the text area below)", style="font-weight: bold; font-size: 11pt;"),
                       
-                      h6("The first line contains the formula for the model. "),
-                      h6("The second line line contains the name of the factor of interest. "),
-                      h6("The third line line contains the reference level of the factor of interest. "),
+                      tags$style(type="text/css", "textarea {height:100px}"),
                       
-                      tags$style(type="text/css", "textarea {width:100%}"),
+                      tags$textarea(id="text", placeholder="weight ~ dose + gesttime + number", rows=5, cols=80,""),
                       
-                      tags$textarea(id="text", placeholder="weight ~ dose + gesttime + number 
-dose  
-0  
-", rows=10, cols=60,"")
+                      br(),
+                      br(),
+                      
+                      tags$p("Select one Factor of Interest", style="font-weight: bold; font-size: 11pt;"),
+                      
+                      uiOutput("selection1"),
+                      
+                      br(),
+                      
+                      selectInput("reference", "Select the Reference Level for the Factor of Interest", choices = NULL),
+                      
+                      br(),
+                      
+                      # Select alternative
+                      radioButtons("alternative", "Select the Test Alternative",
+                                   choices = c(Unequal = "two.sided",
+                                               Greater = "greater",
+                                               Less = "less"),
+                                   selected = "two.sided", inline=TRUE),
+                      
                       
             ),
 

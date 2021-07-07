@@ -176,8 +176,7 @@ function(input, output, session) {
   
   
   
-  
-  # Select Variables
+  # Select Factor of Interest
   output$selection1 <- renderUI({
     
     req(datainput())
@@ -185,8 +184,22 @@ function(input, output, session) {
     removeModal()
     
     chooserInput("selection1", "Available", "Selected",
-                 colnames(datainput()), c(), size = 15, multiple = TRUE)
+                 colnames(datainput()), c(), size = 15, multiple = FALSE)
     
+  })
+  
+  
+  #  Dynamic component for the reference level of the factor of interest
+  
+  observeEvent(input$selection1, {
+    factorinterest <- input$selection1$right
+    choices <-  unique(datainput()[,factorinterest])  
+    updateSelectInput(session = getDefaultReactiveDomain(), inputId = "reference", choices = choices) 
+  })
+  
+  referencename <- reactive({
+    req(input$reference)
+    input$reference
   })
   
   
@@ -249,7 +262,7 @@ function(input, output, session) {
     enc_guessed_first <- enc_guessed[[1]][1]
     
     params <- list(data = datainput(), filename=input$file, fencoding=input$fencoding, decimal=input$decimal, enc_guessed = enc_guessed_first, 
-                   vars1 = input$selection1$right, cont_crit=input$continuity, model = input$text)
+                   cont_crit=input$continuity, model = input$text, fact = input$selection1$right, ref = referencename(), alternative = input$alternative)
    
     
     

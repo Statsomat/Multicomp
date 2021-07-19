@@ -443,7 +443,7 @@ cat("\n \\pagebreak \n",fill=TRUE)
 
 cat("\n# Multiple Comparisons of Means to a Control \n", fill=TRUE)
 #cat("\\small ", fill=TRUE)
-cat("Testing several null hypotheses at the same time at the significance level alpha increases the probability that at least one Type I error (false positive) will be made as the number of null hypotheses increases. This multiplicity problem is considered in multiple comparisons. In this case, the type I error is not controlled in every test for a null hypothesis, but the probability of at least one type I error is limited across all simultaneous tests. Using the adjusted p-value, the individual null hypotheses can be compared with the significance level alpha. Without multiple adjustment, reproducibility cannot be established.",fill=TRUE)
+cat("Theoretical background: Testing multiple hypotheses simultaneously and each at the same pre-specified significance level, increases the probability of false positive effects. The probability to commit at least one false positive decision increases with the number of hypotheses. A solution to overcome this problem is given by multiple comparisons procedures. Here, we do not control the per-hypothesis Type I error but the probability of committing at least one Type I error over all hypotheses. Using p-values adjusted for multiplicity, individual hypotheses can be finally compared with the pre-specified significance level.",fill=TRUE)
 
 cat("\n## Dunnet \n", fill=TRUE)
 

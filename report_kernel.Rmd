@@ -17,6 +17,7 @@ library(formula.tools) #for formula lhs
 library(PerformanceAnalytics) #Scatterplot
 library(rlang) #as_string for cast
 library(stringr) # for strings
+library(tibble) #rownames_to_columns
 ```
 
 
@@ -314,6 +315,13 @@ df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = mode
 for (i in 1:ncol(df_factorized)) {
   if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
 }
+
+#Set factor level of interest as first level of factor of interest
+key <- modelsplit[2] 
+factorlevel <- modelsplit [3]
+levels(df_factorized[,colnames(df_factorized)==key]) <- levels(relevel(df_factorized[,colnames(df_factorized)==key], factorlevel))
+
+
 #linear Regression
 lmfit <- lm(modelfunction, data = df_factorized)
 ```
@@ -422,14 +430,114 @@ summary(output_mcp, test = adjusted(type = "free"))
 
 
 
-```{r, eval=FALSE}
-# MCPs with a control Dunnet Sandwich
-output_sandwich <- glht(lmfit, linfct = mcp2(mylist), alternative = "less", vcov = sandwich)
-sum.sandw <- summary(output_sandwich)
-sandw.df <- data.frame("Variable"=sum.sandw$test$coefficients,"sigma"=sum.sandw$test$sigma, "t-Test"=sum.sandw$test$tstat, "pvalues"=sum.sandw$test$pvalues)
+```{r, dev="cairo_pdf", eval=eval, results='asis'}
 
-confint(output_sandwich, level = 0.95)
-plot(output_sandwich, main = "KI Sandwich", xlab = "x1")  # ylim = c(min(df$x1), max(df$x1)),
+key <- modelsplit[2] 
+factorlevel <- modelsplit [3]
+lev <- levels(df_factorized[,colnames(df_factorized)==key])
+side <- modelsplit[4]
+if(side=="less"){symb <- ">="}
+if(side=="greater"){symb <- "<="}
+if(side=="two.sided"){symb <- "="}
+
+
+cat("\n \\pagebreak \n",fill=TRUE)
+#cat("\\small ", fill=TRUE)
+cat("\n#Control Dunnet \n", fill=TRUE)
+# MCPs with a control Dunnet Sandwich
+output_sandwich <- glht(lmfit, linfct = mcp2(mylist), alternative = side, vcov = sandwich)
+sum.sandw <- summary(output_sandwich)
+#sandw.df <- data.frame("Hypothesis"=paste0(rownames(as.data.frame(sum.sandw$test$coefficients))," >= 0"), "Variable"=as.numeric(sum.sandw$test$coefficients),"sigma"=as.numeric(sum.sandw$test$sigma), "t-Test"=as.numeric(sum.sandw$test$tstat), "Pvalues"=as.numeric(sum.sandw$test$pvalues))
+
+sandw.df <- data.frame("Value"=sum.sandw$test$coefficients, 
+                          "Std.Error"= sum.sandw$test$sigma, "T-value"=sum.sandw$test$tstat,
+                          "P.value"= as.numeric(sum.sandw$test$pvalues))
+rownames(sandw.df) <- paste(rownames(sandw.df),symb,"0")
+
+
+
+
+sandw.df$'sign. level' <- NA
+sandw.df$'sign. level'[which(abs(sandw.df$'P.value') <= 0.001)] <- "***"
+sandw.df$'sign. level'[which(abs(sandw.df$'P.value') > 0.001)] <- "**"
+sandw.df$'sign. level'[which(abs(sandw.df$'P.value') > 0.01)] <- "*"
+sandw.df$'sign. level'[which(abs(sandw.df$'P.value') > 0.05)] <- "."
+sandw.df$'sign. level'[which(abs(sandw.df$'P.value') > 0.1)] <- " "
+
+sandw.df$'sign. level'[which(is.na(sandw.df$'P.value'))] <- "-"
+
+names(sandw.df)[5] <- paste0(names(sandw.df)[5], footnote_marker_number(1, "latex"))
+
+
+#Interpretation
+sandw.df$sig <- NA
+for (i in 1:nrow(sandw.df)) {
+  if(sandw.df[i,]$P.value <= 0.05){
+    sandw.df[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(4, "latex"))
+  }else{ 
+    sandw.df[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(3, "latex"))}
+}
+
+sandw.df$'P.value' <- sapply(sandw.df$'P.value',pformat)
+
+# footnote significance codes
+names(sandw.df)[6] <- "Significance at 5 percent Type I error"
+names(sandw.df)[2] <- paste0(names(sandw.df)[2], footnote_marker_number(2, "latex"))
+
+fn1 <- "Note: The sandwich tester was used to calculate this column."
+fn2 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
+fn3 <- "H1 does not hold significantly."
+fn4 <-  "H1 holds significantly."
+number= c(fn1, fn2, fn3, fn4)
+#rownames to column 
+#sandw.df <- rownames_to_column(sandw.df, var="Null Hypothesis") %>% head
+
+sandw.df <- rownames_to_column(sandw.df, var="Null Hypothesis") %>% head
+
+
+
+
+
+
+
+#fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
+#number= fn1
+
+cat("##Pairwise Comparisons Of Expression Levels \n", fill=TRUE)
+x1 <- knitr::kable(sandw.df , digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
+footnote(x1, number = number) %>%
+  kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+
+
+
+
+sandw.ki <- confint(output_sandwich, level = 0.95)
+#sandw.ki.df <- data.frame("Value"=as.numeric(sandw.ki$confint[,'Estimate']), "Lower bound"=as.numeric(sandw.ki$confint[,'lwr']),"Upper bound"=as.numeric(sandw.ki$confint[,'upr']))
+
+sandw.ki.df <- as.data.frame(sandw.ki$confint)
+colnames(sandw.ki.df) <- c("Value", "Lower bound", "Upper bound")
+rownames(sandw.ki.df) <- paste(rownames(sandw.ki.df),symb,"0")
+
+
+sandw.ki.df$sig <- NA
+for (i in 1:nrow(sandw.ki.df)) {
+  if(sign(sandw.ki.df$'Lower bound')[i]==sign(sandw.ki.df$'Upper bound')[i]){
+    sandw.ki.df[i,]$sig <- paste0("The interval (", round(sandw.ki.df$'Lower bound'[i],2), ", ", round(sandw.ki.df$'Upper bound'[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(1, "latex") )
+  }else{ 
+    sandw.ki.df[i,]$sig <- paste0("The interval (", round(sandw.ki.df$'Lower bound'[i],2), ", ", round(sandw.ki.df$'Upper bound'[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
+}
+fn4 <- "Remark: Zero is not in the conidence interval."
+fn5 <- "Remark: Zero is in the confidence interval."
+number_2= c(fn4, fn5)
+colnames(sandw.ki.df)[4] <- "Interpretation"
+sandw.ki.df <- rownames_to_column(sandw.ki.df, var="Null Hypothesis") %>% head
+
+
+
+x2 <- knitr::kable(sandw.ki.df , digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
+footnote(x2, number = number_2) %>% 
+  kable_styling(x2, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header")) 
+#plot(output_sandwich, main = "KI Sandwich", xlab = "x1")  # ylim = c(min(df$x1), max(df$x1)),
 ```
 
 

@@ -313,25 +313,29 @@ if (ncol(df_cont_iv)>0) {
 }
 
 cat("\n \\pagebreak \n",fill=TRUE)
+
+x <- unlist(df_factorized[which(colnames(df_factorized)==lhs(modelfunction))])
+x <- as.numeric(x)
+
 # Interaction Plot
-if(ncol(df_cat)>=2){
-  if(grepl("[*]", modelfunction)==TRUE){ # plot only if interaction is in modelfunction
-    cat("## Interaction Plot for Factors \n", fill=TRUE)
-    cat("\n Note: The more parallel the lines, the less likely is the significance of the interaction of the factors. \n", fill=TRUE)
-    if(grepl("[+]", modelfunction)==TRUE){
-      ivs <- strsplit(as.character(rhs(modelfunction)), split="[+]")[[1]]
-    }else{ ivs=format(rhs(modelfunction)) }
-    interactions <- ivs[grepl(pattern="[*]", x=ivs)]
+
+if(grepl("[*]", modelfunction)==TRUE){ 
+  cat("## Interaction Plot \n", fill=TRUE)
+  cat("\n Note: The more parallel the lines, the less likely is the significance of the interaction. \n", fill=TRUE)
+  if(grepl("[+]", modelfunction)==TRUE){
+    ivs <- strsplit(format(rhs(as.formula(modelfunction))), split="[+]")[[1]]
+  }else{ ivs=format(rhs(as.formula(modelfunction))) }
+  interactions <- ivs[grepl(pattern="[*]", x=ivs)]
+  
+  for (i in 1:length(interactions)) {
+    inters <- strsplit(interactions[i],split="[*]")[[1]]
+    inters <- trimws(inters)
     
-    for (i in 1:length(interactions)) {
-      inters <- strsplit(interactions[i],split="[*]")[[1]]
-      inters <- trimws(inters)
-      
-      interaction.plot(df_cat[,grep(colnames(df_cat), pattern=inters[1])], df_cat[,grep(colnames(df_cat), pattern=inters[2])], x, xlab= inters[1], trace.label = inters[2], ylab=paste("mean of", lhs(modelfunction)), col = "#2fa42d",main=paste("Interaction Plot of ", inters[1], " and ", inters[2]))
-        cat("\n \\newline \n ", fill=TRUE)
-    }
-  } 
-}
+    interaction.plot(df_factorized[,grep(colnames(df_factorized), pattern=inters[1])], df_factorized[,grep(colnames(df_factorized), pattern=inters[2])], x, xlab= inters[1], trace.label = inters[2], ylab=paste("mean of", lhs(modelfunction)), col = "#2fa42d",main=paste("Interaction Plot of ", inters[1], " and ", inters[2]))
+      cat("\n \\newline \n ", fill=TRUE)
+  }
+} 
+
 
 
 

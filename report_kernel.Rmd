@@ -315,15 +315,22 @@ if (ncol(df_cont_iv)>0) {
 cat("\n \\pagebreak \n",fill=TRUE)
 # Interaction Plot
 if(ncol(df_cat)>=2){
-  cat("## Interaction Plot for Factors \n", fill=TRUE)
-  cat("\n Note: The more parallel the lines, the less likely is the significance of the interaction of the factors. \n", fill=TRUE)
-
-  for (i in 1:(ncol(df_cat)-1)) {
-    for (j in (i+1):ncol(df_cat)) {
-      interaction.plot(df_cat[,i], df_cat[,j], x, xlab= colnames(df_cat)[i], trace.label = colnames(df_cat)[j], ylab=paste("mean of", lhs(modelfunction)), col = "#2fa42d",main=paste("Interaction Plot of ", colnames(df_cat)[i], " and ", colnames(df_cat)[j]))
-      cat("\n \\newline \n ", fill=TRUE)
+  if(grepl("[*]", modelfunction)==TRUE){ # plot only if interaction is in modelfunction
+    cat("## Interaction Plot for Factors \n", fill=TRUE)
+    cat("\n Note: The more parallel the lines, the less likely is the significance of the interaction of the factors. \n", fill=TRUE)
+    if(grepl("[+]", modelfunction)==TRUE){
+      ivs <- strsplit(as.character(rhs(modelfunction)), split="[+]")[[1]]
+    }else{ ivs=format(rhs(modelfunction)) }
+    interactions <- ivs[grepl(pattern="[*]", x=ivs)]
+    
+    for (i in 1:length(interactions)) {
+      inters <- strsplit(interactions[i],split="[*]")[[1]]
+      inters <- trimws(inters)
+      
+      interaction.plot(df_cat[,grep(colnames(df_cat), pattern=inters[1])], df_cat[,grep(colnames(df_cat), pattern=inters[2])], x, xlab= inters[1], trace.label = inters[2], ylab=paste("mean of", lhs(modelfunction)), col = "#2fa42d",main=paste("Interaction Plot of ", inters[1], " and ", inters[2]))
+        cat("\n \\newline \n ", fill=TRUE)
     }
-  }
+  } 
 }
 
 
@@ -525,7 +532,8 @@ glht_dunnet <- rownames_to_column(glht_dunnet, var="Null Hypothesis") %>% head
 
 #Output table
 opts <- options(knitr.kable.NA = "")
-x <- knitr::kable(glht_dunnet, digits=2, escape = F, linesep = '', caption="Multiple Comparison: Dunnet Contrasts", longtable = T)
+cat("\\center Multiple Comparison: Dunnet Contrasts \\center", fill=TRUE)
+x <- knitr::kable(glht_dunnet, digits=2, escape = F, linesep = '', caption=cat(" ",fill=TRUE), longtable = T)
 footnote(x, number = number) %>%
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 
@@ -553,7 +561,8 @@ colnames(conf_glht)[4] <- "Interpretation"
 conf_glht <- rownames_to_column(conf_glht, var="Null Hypothesis") %>% head
 
 opts <- options(knitr.kable.NA = "")
-x <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption="Simoultaneous Confidence Intervals: Dunnet Contrasts", longtable = T)
+cat("\\center Simoultaneous Confidence Intervals: Dunnet Contrasts \\center",fill=TRUE)
+x <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption=cat(" ",fill=TRUE), longtable = T)
 footnote(x, number = number_2) %>% 
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 

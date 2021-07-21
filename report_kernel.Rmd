@@ -471,6 +471,7 @@ if(side=="greater"){symb <- "<="}
 if(side=="two.sided"){symb <- "="}
 
 #Description above
+cat("\\begin{center} Multiple Comparison: Dunnet Contrasts \\end{center}", fill=TRUE)
 if(side == "two.sided"){
   cat(paste("Test whether the factor level ", factorlevel, " of the factor ", key, " is different from the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,"=0."))  
 }else{
@@ -536,12 +537,12 @@ glht_dunnet <- rownames_to_column(glht_dunnet, var="Null Hypothesis") %>% head
 
 #Output table
 opts <- options(knitr.kable.NA = "")
-cat("\\center Multiple Comparison: Dunnet Contrasts \\center", fill=TRUE)
 x <- knitr::kable(glht_dunnet, digits=2, escape = F, linesep = '', caption=cat(" ",fill=TRUE), longtable = T)
 footnote(x, number = number) %>%
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 
 #simoultanous confidence intervals 
+cat("\\begin{center} Simoultaneous Confidence Intervals: Dunnet Contrasts \\end{center}",fill=TRUE)
 cat(paste("Simultaneous Confidence Intervals which includes the true value of the difference between the reference level ", factorlevel, " and the other levels of ", key), fill=TRUE)
 
 confmcp <- confint(output_mcp, level = 0.95) 
@@ -565,7 +566,7 @@ colnames(conf_glht)[4] <- "Interpretation"
 conf_glht <- rownames_to_column(conf_glht, var="Null Hypothesis") %>% head
 
 opts <- options(knitr.kable.NA = "")
-cat("\\center Simoultaneous Confidence Intervals: Dunnet Contrasts \\center",fill=TRUE)
+
 x <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption=cat(" ",fill=TRUE), longtable = T)
 footnote(x, number = number_2) %>% 
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))

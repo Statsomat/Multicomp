@@ -11,6 +11,8 @@ library(kableExtra) # for tables
 library(multcomp) # mcp
 library(sandwich) # sandwich
 library(car) # type II Anova tests
+library(HH) # hovplot 
+library(onewaytests)
 library(psych) # multi.hist
 library(shiny) #safeError
 library(formula.tools) #for formula lhs
@@ -386,9 +388,38 @@ footnote(x, number = number) %>%
 ```
 
 
-```{r type3, eval=eval}
+```{r type3, dev="cairo_pdf", eval=eval, results='asis'}
 # Type III tests 
-Anova(lmfit, type=3)
+a = Anova(lmfit, type=3)
+#Create dataframe
+df_table <- data.frame("Variable"=rownames(a),"Sum.Sq"=a$`Sum Sq`,"Df"=a$Df,"F.value"=a$`F value`,"P.value"=a$'Pr(>F)')
+#format p-value column to p-value
+df_table$P.value <- sapply(df_table$P.value,pformat)
+#add a new column Interpretation
+df_table$'Interpretation (5% error)' <- NA
+#label intercept line
+if(df_table[1,'P.value']<0.05){
+  df_table[1,'Interpretation (5% error)']='Intercept significantly different from zero.'
+}else{df_table[1,'Interpretation (5% error)']='Intercept not significantly different from zero.'}
+#make entries dependent on p-value
+for(i in 2:nrow(df_table)){
+  ifelse(df_table[i,'P.value']<=0.05,
+         if(str_detect(rownames(df_table)[i], ":")){
+      df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", rownames(df_table)[i], "statistically significant.")
+         }else{
+         df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", rownames(df_table)[i], ".")},
+         if(str_detect(rownames(df_table)[i], ":")){
+      df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", rownames(df_table)[i], "is not statistically significant.")
+         }else{
+         df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", rownames(df_table)[i], ".")
+         }
+      )
+}
+#plot result including heading
+cat("## Total influence of factors (ANOVA Type III) \n", fill=TRUE)
+options(knitr.kable.NA = '')
+x1 <- knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
+kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
 
@@ -399,7 +430,6 @@ plot(lmfit)
 ## Partial plots
 ```
 
-
 ```{r, dev="cairo_pdf", eval=eval}
 # Diagnostic Checks 
 ## Homogeneity of Variances 
@@ -407,7 +437,6 @@ plot(lmfit)
 ## Correlated Errors
 ## Outliers
 ```
-
 
 ```{r, eval=eval}
 # MCPs with a control Dunnet
@@ -442,12 +471,21 @@ if(side=="two.sided"){symb <- "="}
 
 
 cat("\n \\pagebreak \n",fill=TRUE)
-#cat("\\small ", fill=TRUE)
 cat("\n#Control Dunnet \n", fill=TRUE)
+cat("\n##Comparisons To A Control \n", fill=TRUE)
+cat("\nThe sandwich function provides a heteroskedasticity-consistent estimate of the covariance matrix. Thus, the sandwich estimate is resistant to the violation of the variance homogeneity assumption.\n", fill=TRUE)
+cat("\\begin{center} Multiple Comparison: Dunnett Contrasts Sandwich \\end{center}", fill=TRUE)
+
+#Description above
+if(side == "two.sided"){
+  cat(paste("\nTest whether the factor level ", factorlevel, " of the factor ", key, " is different from the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,"=0."))  
+}else{
+  cat(paste("\nTest whether the factor level ", factorlevel, " of the factor ", key, " is ", side, " than the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,symb,"0." ), fill=TRUE)
+}
+
 # MCPs with a control Dunnet Sandwich
 output_sandwich <- glht(lmfit, linfct = mcp2(mylist), alternative = side, vcov = sandwich)
 sum.sandw <- summary(output_sandwich)
-#sandw.df <- data.frame("Hypothesis"=paste0(rownames(as.data.frame(sum.sandw$test$coefficients))," >= 0"), "Variable"=as.numeric(sum.sandw$test$coefficients),"sigma"=as.numeric(sum.sandw$test$sigma), "t-Test"=as.numeric(sum.sandw$test$tstat), "Pvalues"=as.numeric(sum.sandw$test$pvalues))
 
 sandw.df <- data.frame("Value"=sum.sandw$test$coefficients, 
                           "Std.Error"= sum.sandw$test$sigma, "T-value"=sum.sandw$test$tstat,
@@ -457,16 +495,16 @@ rownames(sandw.df) <- paste(rownames(sandw.df),symb,"0")
 
 
 
-sandw.df$'sign. level' <- NA
-sandw.df$'sign. level'[which(abs(sandw.df$'P.value') <= 0.001)] <- "***"
-sandw.df$'sign. level'[which(abs(sandw.df$'P.value') > 0.001)] <- "**"
-sandw.df$'sign. level'[which(abs(sandw.df$'P.value') > 0.01)] <- "*"
-sandw.df$'sign. level'[which(abs(sandw.df$'P.value') > 0.05)] <- "."
-sandw.df$'sign. level'[which(abs(sandw.df$'P.value') > 0.1)] <- " "
+sandw.df$'Sign. level' <- NA
+sandw.df$'Sign. level'[which(abs(sandw.df$'P.value') <= 0.001)] <- "***"
+sandw.df$'Sign. level'[which(abs(sandw.df$'P.value') > 0.001)] <- "**"
+sandw.df$'Sign. level'[which(abs(sandw.df$'P.value') > 0.01)] <- "*"
+sandw.df$'Sign. level'[which(abs(sandw.df$'P.value') > 0.05)] <- "."
+sandw.df$'Sign. level'[which(abs(sandw.df$'P.value') > 0.1)] <- " "
 
-sandw.df$'sign. level'[which(is.na(sandw.df$'P.value'))] <- "-"
+sandw.df$'Sign. level'[which(is.na(sandw.df$'P.value'))] <- "-"
 
-names(sandw.df)[5] <- paste0(names(sandw.df)[5], footnote_marker_number(1, "latex"))
+names(sandw.df)[5] <- paste0(names(sandw.df)[5], footnote_marker_number(2, "latex"))
 
 
 #Interpretation
@@ -480,40 +518,24 @@ for (i in 1:nrow(sandw.df)) {
 
 sandw.df$'P.value' <- sapply(sandw.df$'P.value',pformat)
 
-# footnote significance codes
+names(sandw.df)[4] <- paste0("adjusted ", names(sandw.df)[4])
 names(sandw.df)[6] <- "Significance at 5 percent Type I error"
-names(sandw.df)[2] <- paste0(names(sandw.df)[2], footnote_marker_number(2, "latex"))
 
-fn1 <- "Note: The sandwich tester was used to calculate this column."
+# footnote significance codes
+fn1 <- "Note: Due to the applied sandwich estimator, the standard errors of the effects may be unequal."
 fn2 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
 fn3 <- "H1 does not hold significantly."
 fn4 <-  "H1 holds significantly."
 number= c(fn1, fn2, fn3, fn4)
-#rownames to column 
-#sandw.df <- rownames_to_column(sandw.df, var="Null Hypothesis") %>% head
 
 sandw.df <- rownames_to_column(sandw.df, var="Null Hypothesis") %>% head
 
-
-
-
-
-
-
-#fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
-#number= fn1
-
-cat("##Pairwise Comparisons Of Expression Levels \n", fill=TRUE)
 x1 <- knitr::kable(sandw.df , digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 footnote(x1, number = number) %>%
   kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 
 
-
-
 sandw.ki <- confint(output_sandwich, level = 0.95)
-#sandw.ki.df <- data.frame("Value"=as.numeric(sandw.ki$confint[,'Estimate']), "Lower bound"=as.numeric(sandw.ki$confint[,'lwr']),"Upper bound"=as.numeric(sandw.ki$confint[,'upr']))
-
 sandw.ki.df <- as.data.frame(sandw.ki$confint)
 colnames(sandw.ki.df) <- c("Value", "Lower bound", "Upper bound")
 rownames(sandw.ki.df) <- paste(rownames(sandw.ki.df),symb,"0")
@@ -532,6 +554,8 @@ number_2= c(fn4, fn5)
 colnames(sandw.ki.df)[4] <- "Interpretation"
 sandw.ki.df <- rownames_to_column(sandw.ki.df, var="Null Hypothesis") %>% head
 
+cat("\\begin{center} Simultaneous Confidence Intervals: Dunnett Contrasts Sandwich \\end{center}", fill=TRUE)
+cat(paste0("Simultaneous Confidence Intervals which includes the true value of the difference between the reference level ", factorlevel, " and the other levels of ", key, "."), fill=TRUE)
 
 
 x2 <- knitr::kable(sandw.ki.df , digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
@@ -540,6 +564,10 @@ footnote(x2, number = number_2) %>%
 #plot(output_sandwich, main = "KI Sandwich", xlab = "x1")  # ylim = c(min(df$x1), max(df$x1)),
 ```
 
+```{r, eval=FALSE}
+# MCPs with a control Dunnet step-down 
+summary(output_mcp, test = adjusted(type = "free"))
+```
 
 ```{r, eval=FALSE}
 # MCPs with a control Dunnet step-down, Sandwich

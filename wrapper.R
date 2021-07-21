@@ -20,7 +20,7 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
 ## Selection of variables
 vars1 <- c("breaks", "wool", "tension") 
 ## Model Information
-model <- "breaks ~ wool*tension \n tension \n L \n two.sided"
+model <- "breaks ~ wool \n wool \n A \n two.sided"
 
 ## Criterium to identify continuous vs discrete variables 
 cont_crit <- "Liberal" # or Conservative 

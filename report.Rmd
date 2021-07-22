@@ -3,7 +3,7 @@ title: "Multiple Comparison Procedures To A Control"
 subtitle: "For AN(C)OVA Models"
 author: 
   - Statsomat.com
-  - Contributors^[Denise Welsch, Markus Neuhäuser, Viktoria Daum, Linda Müller, Damian Nink, Simone Schüttler, Daniela Wüller]
+  - Contributors^[Denise Welsch, Viktoria Daum, Linda Müller, Damian Nink, Simone Schüttler, Daniela Wüller]
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output:
   pdf_document:
@@ -32,19 +32,7 @@ header-includes:
 \pagebreak
 
 
-```{r, dev = "cairo_pdf", results = "asis", echo = FALSE}
-# Check model syntax 
-msyntax <- TRUE
-model <- params$model
-modelsplit <- unlist(strsplit(model, split="\n"))
-modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
-modelsplit <- modelsplit[modelsplit != ""]
-
-# Set stop errors if the lines (1,2,3) are not as expected 
-```     
-
-
-```{r child = 'report_kernel.Rmd', eval = msyntax}
+```{r child = 'report_kernel.Rmd', eval = TRUE}
 ```
 
 

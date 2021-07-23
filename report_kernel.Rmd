@@ -443,7 +443,7 @@ GoF$Explanation <- c("Fraction of variance explained by the model.",
                      "Adjusted R-Squared by penalizing higher p.", 
                      "Overall significance of the model.", 
                      "P-value of the F-statistic.")
-.
+
 GoF$Interpretation <- NA
 GoF$Interpretation[1] <- "0: No fitting of data by the model. , 1: Perfect fit." 
 GoF$Interpretation[2] <-"A higher value means a better fit by the model."

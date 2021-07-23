@@ -10,16 +10,15 @@ library(knitr) # for tables
 library(kableExtra) # for tables 
 library(multcomp) # mcp
 library(sandwich) # sandwich
-library(car) # type II Anova tests
-library(HH) # hovplot 
-library(onewaytests)
+library(car) # type III Anova tests
 library(psych) # multi.hist
 library(shiny) #safeError
 library(formula.tools) #for formula lhs
 library(PerformanceAnalytics) #Scatterplot
 library(rlang) #as_string for cast
 library(stringr) # for strings
-library(tibble) #rownames_to_columns
+library(tibble) #for rownames to columns
+
 ```
 
 
@@ -81,7 +80,7 @@ df_num <- df[which(sapply(df, is.numeric) == 1L)]
 if (ncol(df_num)>0){
   rateunique_df <- sapply(df_num, function(col) continuous(col))
   
-  if (params$cont_crit == "Conservative"){
+  if (params$cont_crit == "Severe"){
     df_cont <- df_num[,rateunique_df,drop=FALSE] # numeric, continuous resp. assumption fulfilled 
     df_noncont <- df_num[,!rateunique_df,drop=FALSE] # numeric, non-continuous 
   } else {
@@ -193,7 +192,15 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 
 \pagebreak
 
-```{r modelinformation, eval=eval, results="asis"}
+```{r modelinformation, eval = eval, results = "asis"}
+
+# Split the text area containing the model information 
+model <- params$model
+modelsplit <- unlist(strsplit(model, split="\n"))
+modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
+modelsplit <- modelsplit[modelsplit != ""]
+
+# List model information
 cat("# Model Information", fill=TRUE)
 cat("You defined the following linear model:", fill=TRUE)
 cat(modelsplit[1])
@@ -201,7 +208,7 @@ cat("\\newline",fill=TRUE)
 cat("You are interested in the factor:", fill=TRUE)
 cat(modelsplit[2])
 cat("\\newline",fill=TRUE)
-cat("You are interested in pairwise comparisons to the control factor level:", fill=TRUE)
+cat("You are interested in pairwise comparisons to the reference level:", fill=TRUE)
 cat(modelsplit[3])
 ```
 
@@ -303,32 +310,33 @@ if(ncol(df_cat)>=2){
 ```
 
 
-```{r modelinfo, eval=eval}
-# Model information
-modelfunction <- modelsplit[1]
+```{r relevel, eval=eval}
+# Relevel factor of interest 
 factor_index <- which(colnames(df_factorized) == modelsplit[2])
-## New reference for the comparison 
 df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = modelsplit[3])
 ```
 
-```{r linearReg, eval=eval}
-## Set effect coding for the rest of the factors
-##sapply(df_factorized, function(col) if (is.factor(col)) contrasts(col) <- contr.sum )
+```{r fitmodel, eval=eval}
+# Set effect coding for the rest of the factors, relevant for the type III Anova table 
 for (i in 1:ncol(df_factorized)) {
   if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
 }
 
-#Set factor level of interest as first level of factor of interest
-key <- modelsplit[2] 
-factorlevel <- modelsplit [3]
-levels(df_factorized[,colnames(df_factorized)==key]) <- levels(relevel(df_factorized[,colnames(df_factorized)==key], factorlevel))
-
-
-#linear Regression
-lmfit <- lm(modelfunction, data = df_factorized)
+# Fit Linear Model
+tryCatch({
+  modelfunction <- modelsplit[1]
+  lmfit <- lm(modelfunction, data = df_factorized)
+  ## Initialize next computations
+  eval2 <- TRUE
+}, error=function(e) {
+  
+  stop(safeError("Error: The model function could not be fitted to the data."))
+  
+}
+)
 ```
 
-```{r Parametertable, dev="cairo_pdf", eval=eval, results='asis'}
+```{r Parametertable, dev="cairo_pdf", eval = eval, results='asis'}
 # Table Parameter estimates
 cat("\n \\pagebreak \n",fill=TRUE)
 cat("\n# Analysis of variance  \n", fill=TRUE)
@@ -401,6 +409,7 @@ df_table$'Interpretation (5% error)' <- NA
 if(df_table[1,'P.value']<0.05){
   df_table[1,'Interpretation (5% error)']='Intercept significantly different from zero.'
 }else{df_table[1,'Interpretation (5% error)']='Intercept not significantly different from zero.'}
+
 #make entries dependent on p-value
 for(i in 2:nrow(df_table)){
   ifelse(df_table[i,'P.value']<=0.05,
@@ -415,6 +424,7 @@ for(i in 2:nrow(df_table)){
          }
       )
 }
+
 #plot result including heading
 cat("## Total influence of factors (ANOVA Type III) \n", fill=TRUE)
 options(knitr.kable.NA = '')
@@ -430,6 +440,7 @@ plot(lmfit)
 ## Partial plots
 ```
 
+
 ```{r, dev="cairo_pdf", eval=eval}
 # Diagnostic Checks 
 ## Homogeneity of Variances 
@@ -438,136 +449,146 @@ plot(lmfit)
 ## Outliers
 ```
 
-```{r, eval=eval}
+
+```{r Dunnet, eval=eval, results='asis', dev="cairo_pdf"}
+cat("\n \\pagebreak \n",fill=TRUE)
+
+cat("\n# Multiple Comparisons of Means to a Control \n", fill=TRUE)
+#cat("\\small ", fill=TRUE)
+cat("Theoretical background: Testing multiple hypotheses simultaneously and each at the same pre-specified significance level, increases the probability of false positive effects. The probability to commit at least one false positive decision increases with the number of hypotheses. A solution to overcome this problem is given by multiple comparisons procedures. Here, we do not control the per-hypothesis Type I error but the probability of committing at least one Type I error over all hypotheses. Using p-values adjusted for multiplicity, individual hypotheses can be finally compared with the pre-specified significance level.",fill=TRUE)
+
+cat("\n## Dunnet \n", fill=TRUE)
+
 # MCPs with a control Dunnet
 ## Construct input to mcp2 function which is an update of the original mcp function 
-key <- modelsplit[2]
-mylist <- list()
-mylist[[key]] <- "Dunnet"
-names(mylist) <- key
-output_mcp <- glht(lmfit, linfct = mcp2(mylist), alternative = "less")
-summary(output_mcp)
-confint(output_mcp, level = 0.95)
-#plot(output_mcp, main = "", ylim = c(min(df$x1), max(df$x1)), xlab = "x1")
-```
-
-
-```{r, eval=FALSE}
-# MCPs with a control Dunnet step-down 
-summary(output_mcp, test = adjusted(type = "free"))
-```
-
-
-
-```{r, dev="cairo_pdf", eval=eval, results='asis'}
 
 key <- modelsplit[2] 
 factorlevel <- modelsplit [3]
 lev <- levels(df_factorized[,colnames(df_factorized)==key])
 side <- modelsplit[4]
+
 if(side=="less"){symb <- ">="}
 if(side=="greater"){symb <- "<="}
 if(side=="two.sided"){symb <- "="}
 
-
-cat("\n \\pagebreak \n",fill=TRUE)
-cat("\n#Control Dunnet \n", fill=TRUE)
-cat("\n##Comparisons To A Control \n", fill=TRUE)
-cat("\nThe sandwich function provides a heteroskedasticity-consistent estimate of the covariance matrix. Thus, the sandwich estimate is resistant to the violation of the variance homogeneity assumption.\n", fill=TRUE)
-cat("\\begin{center} Multiple Comparison: Dunnett Contrasts Sandwich \\end{center}", fill=TRUE)
-
 #Description above
+cat("\\begin{center} Multiple Comparison: Dunnet Contrasts \\end{center}", fill=TRUE)
 if(side == "two.sided"){
-  cat(paste("\nTest whether the factor level ", factorlevel, " of the factor ", key, " is different from the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,"=0."))  
+  cat(paste("Test whether the factor level ", factorlevel, " of the factor ", key, " is different from the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,"=0."))  
 }else{
-  cat(paste("\nTest whether the factor level ", factorlevel, " of the factor ", key, " is ", side, " than the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,symb,"0." ), fill=TRUE)
+  cat(paste("Test whether the factor level ", factorlevel, " of the factor ", key, " is ", side, " than the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,symb,"0." ), fill=TRUE)
 }
 
-# MCPs with a control Dunnet Sandwich
-output_sandwich <- glht(lmfit, linfct = mcp2(mylist), alternative = side, vcov = sandwich)
-sum.sandw <- summary(output_sandwich)
+#compute multiple comparison
+mylist <- list()
+mylist[[key]] <- "Dunnet"
+names(mylist) <- key 
 
-sandw.df <- data.frame("Value"=sum.sandw$test$coefficients, 
-                          "Std.Error"= sum.sandw$test$sigma, "T-value"=sum.sandw$test$tstat,
-                          "P.value"= as.numeric(sum.sandw$test$pvalues))
-rownames(sandw.df) <- paste(rownames(sandw.df),symb,"0")
+output_mcp <- glht(lmfit, linfct = mcp2(mylist), alternative = side) 
+summcp<- summary(output_mcp)
 
+#pretty table
+glht_dunnet <- data.frame("Value"=summcp$test$coefficients, 
+                          "Std.Error"= summcp$test$sigma, "T-value"=summcp$test$tstat,
+                          "P.value"= as.numeric(summcp$test$pvalues))
 
+rownames(glht_dunnet) <- paste(rownames(glht_dunnet),symb,"0")
 
+glht_dunnet$'Sign. level' <- NA
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value ) <= 0.001)] <- "***"
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.001)] <- "**"
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.01)] <- "*"
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.05)] <- "."
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.1)] <- " "
+glht_dunnet$'Sign. level'[which(is.na(glht_dunnet$P.value))] <- "-"
 
-sandw.df$'Sign. level' <- NA
-sandw.df$'Sign. level'[which(abs(sandw.df$'P.value') <= 0.001)] <- "***"
-sandw.df$'Sign. level'[which(abs(sandw.df$'P.value') > 0.001)] <- "**"
-sandw.df$'Sign. level'[which(abs(sandw.df$'P.value') > 0.01)] <- "*"
-sandw.df$'Sign. level'[which(abs(sandw.df$'P.value') > 0.05)] <- "."
-sandw.df$'Sign. level'[which(abs(sandw.df$'P.value') > 0.1)] <- " "
+glht_dunnet$P.value <- sapply(glht_dunnet$P.value,pformat)
 
-sandw.df$'Sign. level'[which(is.na(sandw.df$'P.value'))] <- "-"
-
-names(sandw.df)[5] <- paste0(names(sandw.df)[5], footnote_marker_number(2, "latex"))
-
+names(glht_dunnet)[5] <- paste0(names(glht_dunnet)[5], footnote_marker_number(1, "latex"))
 
 #Interpretation
-sandw.df$sig <- NA
-for (i in 1:nrow(sandw.df)) {
-  if(sandw.df[i,]$P.value <= 0.05){
-    sandw.df[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(4, "latex"))
-  }else{ 
-    sandw.df[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(3, "latex"))}
+
+glht_dunnet$sig <- NA
+if(side != "two.sided"){
+  for (i in 1:nrow(glht_dunnet)) {
+    if(glht_dunnet[i,]$P.value <= 0.05){
+      glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(3, "latex"))
+    }else{ 
+      glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
+  }
+}else{
+    for (i in 1:nrow(glht_dunnet)) {
+    if(glht_dunnet[i,]$P.value <= 0.05){
+      glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly different than ", factorlevel, footnote_marker_number(3, "latex"))
+    }else{ 
+      glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not different than " , lev[i+1], footnote_marker_number(2, "latex"))}
+  }
 }
-
-sandw.df$'P.value' <- sapply(sandw.df$'P.value',pformat)
-
-names(sandw.df)[4] <- paste0("adjusted ", names(sandw.df)[4])
-names(sandw.df)[6] <- "Significance at 5 percent Type I error"
 
 # footnote significance codes
-fn1 <- "Note: Due to the applied sandwich estimator, the standard errors of the effects may be unequal."
-fn2 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
-fn3 <- "H1 does not hold significantly."
-fn4 <-  "H1 holds significantly."
-number= c(fn1, fn2, fn3, fn4)
+names(glht_dunnet)[6] <- "Significance at 5 percent Type I error"
+fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
+fn2 <- "H1 does not hold significantly."
+fn3 <-  "H1 holds significantly."
+number= c(fn1, fn2, fn3)
 
-sandw.df <- rownames_to_column(sandw.df, var="Null Hypothesis") %>% head
+#rownames to column 
+colnames(glht_dunnet)[4] <- c("adjusted P.value")
+glht_dunnet <- rownames_to_column(glht_dunnet, var="Null Hypothesis") %>% head
 
-x1 <- knitr::kable(sandw.df , digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
-footnote(x1, number = number) %>%
-  kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+#Output table
+opts <- options(knitr.kable.NA = "")
+x <- knitr::kable(glht_dunnet, digits=2, escape = F, linesep = '', caption=cat(" ",fill=TRUE), longtable = T)
+footnote(x, number = number) %>%
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 
+#simoultanous confidence intervals 
+cat("\\begin{center} Simoultaneous Confidence Intervals: Dunnet Contrasts \\end{center}",fill=TRUE)
+cat(paste("Simultaneous Confidence Intervals which includes the true value of the difference between the reference level ", factorlevel, " and the other levels of ", key), fill=TRUE)
 
-sandw.ki <- confint(output_sandwich, level = 0.95)
-sandw.ki.df <- as.data.frame(sandw.ki$confint)
-colnames(sandw.ki.df) <- c("Value", "Lower bound", "Upper bound")
-rownames(sandw.ki.df) <- paste(rownames(sandw.ki.df),symb,"0")
+confmcp <- confint(output_mcp, level = 0.95) 
+conf_glht <- as.data.frame(confmcp$confint)
+colnames(conf_glht) <- c("Value", "Lower bound", "Upper bound")
+rownames(conf_glht) <- paste(rownames(conf_glht),symb,"0")
 
-
-sandw.ki.df$sig <- NA
-for (i in 1:nrow(sandw.ki.df)) {
-  if(sign(sandw.ki.df$'Lower bound')[i]==sign(sandw.ki.df$'Upper bound')[i]){
-    sandw.ki.df[i,]$sig <- paste0("The interval (", round(sandw.ki.df$'Lower bound'[i],2), ", ", round(sandw.ki.df$'Upper bound'[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(1, "latex") )
+conf_glht$sig <- NA
+for (i in 1:nrow(conf_glht)) {
+  if(sign(conf_glht$`Lower bound`)[i]==sign(conf_glht$`Upper bound`)[i]){
+    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(1, "latex") )
   }else{ 
-    sandw.ki.df[i,]$sig <- paste0("The interval (", round(sandw.ki.df$'Lower bound'[i],2), ", ", round(sandw.ki.df$'Upper bound'[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
+    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
 }
+
 fn4 <- "Remark: Zero is not in the conidence interval."
 fn5 <- "Remark: Zero is in the confidence interval."
 number_2= c(fn4, fn5)
-colnames(sandw.ki.df)[4] <- "Interpretation"
-sandw.ki.df <- rownames_to_column(sandw.ki.df, var="Null Hypothesis") %>% head
 
-cat("\\begin{center} Simultaneous Confidence Intervals: Dunnett Contrasts Sandwich \\end{center}", fill=TRUE)
-cat(paste0("Simultaneous Confidence Intervals which includes the true value of the difference between the reference level ", factorlevel, " and the other levels of ", key, "."), fill=TRUE)
+colnames(conf_glht)[4] <- "Interpretation"
+conf_glht <- rownames_to_column(conf_glht, var="Null Hypothesis") %>% head
 
+opts <- options(knitr.kable.NA = "")
 
-x2 <- knitr::kable(sandw.ki.df , digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
-footnote(x2, number = number_2) %>% 
-  kable_styling(x2, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header")) 
-#plot(output_sandwich, main = "KI Sandwich", xlab = "x1")  # ylim = c(min(df$x1), max(df$x1)),
+x <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption=cat(" ",fill=TRUE), longtable = T)
+footnote(x, number = number_2) %>% 
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+
 ```
+
 
 ```{r, eval=FALSE}
 # MCPs with a control Dunnet step-down 
 summary(output_mcp, test = adjusted(type = "free"))
 ```
+
+
+```{r, eval=FALSE}
+# MCPs with a control Dunnet Sandwich
+output_sandwich <- glht(lmfit, linfct = mcp2(mylist), alternative = "less", vcov = sandwich)
+summary(output_sandwich)
+confint(output_sandwich, level = 0.95)
+#plot(output_sandwich, main = "", ylim = c(min(df$x1), max(df$x1)), xlab = "x1")
+```
+
 
 ```{r, eval=FALSE}
 # MCPs with a control Dunnet step-down, Sandwich

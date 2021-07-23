@@ -49,5 +49,3 @@ cat("\n# References", fill=TRUE)
 ---
 nocite: '@*'
 ...
-
-

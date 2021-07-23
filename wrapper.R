@@ -2,6 +2,7 @@
 library(rmarkdown)
 library(data.table)
 library(shiny)
+library(tinytex)
 
 
 # Import functions 
@@ -19,8 +20,7 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
 ## Selection of variables
 vars1 <- c("minutes", "blanket") 
 ## Model Information
-model <- "minutes ~ blanket \n blanket \n b0 \n less"
-
+model <- "minutes ~ blanket \n blanket \n b0 \n two.sided"
 
 ## Criterium to identify continuous vs discrete variables 
 cont_crit <- "Liberal" # or Conservative 

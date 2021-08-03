@@ -4,6 +4,7 @@ library(data.table)
 library(shiny)
 library(tinytex)
 
+
 # Import functions 
 source("helpers/Functions.R")
 
@@ -18,10 +19,8 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
               encoding ="UTF-8", data.table = FALSE, na.strings = "")
 ## Selection of variables
 vars1 <- c("minutes", "blanket") 
-#vars1 <- c("breaks", "wool", "tension") 
 ## Model Information
-model <- "minutes ~ blanket \n b0 \n two.sided" 
-#model <- "breaks ~ wool*tension \n tension \n L \n two.sided"
+model <- "minutes ~ blanket \n blanket \n b0 \n two.sided"
 
 ## Criterium to identify continuous vs discrete variables 
 cont_crit <- "Liberal" # or Conservative 
@@ -41,4 +40,3 @@ rmarkdown::render("report.Rmd", params = list(
 ))
 
 ############################################## end of program ########################################################################
-

@@ -2,8 +2,8 @@
 title: "Multiple Comparison Procedures To A Control"
 subtitle: "For AN(C)OVA Models"
 author: 
-  - Statsomat.com
-  - Contributors^[Denise Welsch, Viktoria Daum, Linda Müller, Damian Nink, Simone Schüttler, Daniela Wüller]
+  - Denise Welsch
+  - Contributors^[Viktoria Daum, Linda Müller, Damian Nink, Simone Schüttler, Daniela Wüller]
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output:
   pdf_document:
@@ -23,7 +23,7 @@ params:
   cont_crit: NA
 header-includes:
    - \usepackage{xcolor}
-   #- \setmainfont[BoldFont=FiraSans-Bold, Extension=.otf]{FiraSans-Regular}
+   - \setmainfont[BoldFont=FiraSans-Bold, Extension=.otf]{FiraSans-Regular}
    - \usepackage{booktabs}
    - \usepackage{longtable}
    - \usepackage{float}

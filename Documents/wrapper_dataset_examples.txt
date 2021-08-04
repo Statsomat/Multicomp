@@ -10,7 +10,7 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
 ## Selection of variables
 vars1 <- c("breaks", "wool", "tension") 
 ## Model Information
-model <- "breaks ~ wool \n wool \n A"
+model <- "breaks ~ wool \n wool \n A \n less"
 
 
 
@@ -23,7 +23,7 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
 ## Selection of variables
 vars1 <- c("breaks", "wool", "tension") 
 ## Model Information
-model <- "breaks ~ tension \n tension \n L"
+model <- "breaks ~ tension \n tension \n L \n less"
 
 
 
@@ -36,7 +36,7 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
 ## Selection of variables
 vars1 <- c("breaks", "wool", "tension") 
 ## Model Information
-model <- "breaks ~ wool*tension \n tension \n L"
+model <- "breaks ~ wool*tension \n tension \n L \n less"
 
 
 
@@ -49,7 +49,7 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
 ## Selection of variables
 vars1 <- c("breaks", "wool", "tension") 
 ## Model Information
-model <- "breaks ~ wool*tension \n wool \n A"
+model <- "breaks ~ wool*tension \n wool \n A \n less"
 
 
 # Dataset recovery, one-factorial
@@ -74,7 +74,7 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
 ## Selection of variables
 vars1 <- c("weight", "dose", "gesttime", "number") 
 ## Model Information
-model <- "weight ~ dose + gesttime + number \n dose \n 0"
+model <- "weight ~ dose + gesttime + number \n dose \n 0 \n less"
 
 
 
@@ -87,7 +87,7 @@ data <- fread(path, header = "auto", sep ="auto", dec = decimal,
 ## Selection of variables
 vars1 <- c("weight", "dose", "gesttime", "number") 
 ## Model Information
-model <- "weight ~ dose+gesttime+number+dose*number+gesttime*number \n dose \n 0"
+model <- "weight ~ dose+gesttime+number+dose*number+gesttime*number \n dose \n 0 \n less"
 
 
 

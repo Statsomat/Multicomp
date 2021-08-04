@@ -12,25 +12,30 @@ library(multcomp) # mcp
 library(sandwich) # sandwich
 library(car) # type III Anova tests
 library(psych) # multi.hist
-library(shiny) #safeError
 library(formula.tools) #for formula lhs
-library(PerformanceAnalytics) #Scatterplot
-library(rlang) #as_string for cast
+library(PerformanceAnalytics) # Scatterplot
+library(rlang) # as_string for cast
 library(stringr) # for strings
 library(tibble) #for rownames to columns
-
+library(HH) # hovplot 
+library(onewaytests) #bf test
 ```
 
 
 ```{r getdata}
 # Get data
 df <- params$data
+
 # Save a copy for other purposes 
 df_code <- df
+
 # Initialize evaluation of chunks
 eval0 <- FALSE
 eval <- FALSE
 eval_rows <- FALSE
+oneway <- FALSE
+homogtest <- FALSE
+
 # Apply selection of variables 
 tryCatch({
   
@@ -326,6 +331,7 @@ for (i in 1:ncol(df_factorized)) {
 tryCatch({
   modelfunction <- modelsplit[1]
   lmfit <- lm(modelfunction, data = df_factorized)
+  
   ## Initialize next computations
   eval2 <- TRUE
 }, error=function(e) {
@@ -339,7 +345,7 @@ tryCatch({
 ```{r Parametertable, dev="cairo_pdf", eval = eval, results='asis'}
 # Table Parameter estimates
 cat("\n \\pagebreak \n",fill=TRUE)
-cat("\n# Analysis of variance  \n", fill=TRUE)
+cat("\n# Analysis of Variance  \n", fill=TRUE)
 
 coef.lmfit <- as.data.frame(summary(lmfit)$coefficients)
 coef.lmfit1 <- data.frame("Variable"=rownames(coef.lmfit),"Value"=coef.lmfit$Estimate, 
@@ -388,7 +394,7 @@ names(coef.lmfit1)[7] <- "Significance at 5 percent error"
 fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
 number= fn1
 # create table
-cat("## Effect of the separate expressions of the given variables (Parameter Estimates) \n", fill=TRUE)
+cat("## Detailed Influence of Factors (Linear Model Parameter Estimates) \n", fill=TRUE)
 opts <- options(knitr.kable.NA = "")
 x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 footnote(x, number = number) %>%
@@ -426,7 +432,7 @@ for(i in 2:nrow(df_table)){
 }
 
 #plot result including heading
-cat("## Total influence of factors (ANOVA Type III) \n", fill=TRUE)
+cat("## Total Influence of Factors (ANOVA Type III) \n", fill=TRUE)
 options(knitr.kable.NA = '')
 x1 <- knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
@@ -463,20 +469,68 @@ kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HO
 
 ```
 
-```{r plots1, dev="cairo_pdf", eval=eval}
-# Diagnostic plots 
+```{r diagnosticplots, dev="cairo_pdf", eval=eval, results="asis"}
+cat("# Diagnostics", fill=TRUE) 
+cat("## Diagnostic Plots ", fill=TRUE) 
 layout(matrix(c(1,2,3,4),2,2)) 
 plot(lmfit) 
-## Partial plots
+```
+
+```{r def_control_homog, eval=eval}
+if(length(df_cat_factor)==1L) {
+  oneway <- TRUE
+}
 ```
 
 
-```{r, dev="cairo_pdf", eval=eval}
-# Diagnostic Checks 
-## Homogeneity of Variances 
-## Normality
-## Correlated Errors
-## Outliers
+```{r bftest1, dev="cairo_pdf", eval = eval,  results="asis"}
+# Homogeneity of Variances, Brown and Forsythe Test
+cat("##  Homogeneity of Variances", fill=TRUE)
+alphahomog <- 0.1
+```
+
+
+```{r bftest2, dev="cairo_pdf", eval = oneway}
+# Homogeneity of Variances, Brown and Forsythe Test
+cat("###  Brown and Forsyth Test of Homogeneity of Variances", fill=TRUE)
+hov(as.formula(modelfunction), data = df_factorized)
+bf <- hov(as.formula(modelfunction), data = df_factorized)
+
+if (bf$p.value <= alphahomog) {
+   cat("Warning: Group variances significantly heterogeneous at 1% error! The Analysis of Variance may not be valid. ", fill=TRUE)
+} else {
+   cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)
+   homogtest <- TRUE
+}
+```
+
+
+```{r hovplot, dev="cairo_pdf", eval=oneway, results="asis", fig.width=8, fig.cap="Homogeneity of Variance Plot"}
+# Brown and Forsythe Plot
+cat("### Brown and Forsyth Plot", fill=TRUE)
+
+## Plot for Brown and Forsythe 
+hovPlot(as.formula(modelfunction), data = df_factorized)
+cat("\\newline ", fill=TRUE)
+cat("Interpretation: The response variable is denoted by y. The fist of the three plots contains boxplots of each level of the independent variable. In the second plot, the response variable y is centered by its median, such that the median of the transformation equals 0. In the third plot, the absolute deviations from the median of the response y are shown. The Brown and Forsyth test statistic is the F statistic resulting from an ordinary one-way analysis of variance on the data points in the third panel (on the absolute deviations from the median). ", fill=TRUE)
+```
+
+
+```{r levene, dev="cairo_pdf", eval=eval, results="asis"}
+cat("### Levene Test of Homogeneity of Variances ", fill=TRUE)
+
+lev = leveneTest(as.formula(modelfunction), data = df_factorized)
+lev2 <- as.data.frame(lev)
+knitr::kable(lev2 , digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T) %>%
+  kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+
+if(lev$`Pr(>F)`[1] <= alphahomog) {
+     cat("Warning: Group variances significantly heterogeneous at 1% error! The Analysis of Variance may not be valid. ", fill=TRUE) 
+     homogtest <- FALSE
+} else {
+   cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)
+   homogtest <- TRUE
+  }
 ```
 
 
@@ -610,9 +664,9 @@ footnote(x, number = number_2) %>%
 summary(output_mcp, test = adjusted(type = "free"))
 ```
 
+\pagebreak 
 
-
-```{r, dev="cairo_pdf", eval=eval, results='asis'}
+```{r, dev = "cairo_pdf", eval = eval, results = "asis"}
 # MCPs with a control Dunnet Sandwich
 
 key <- modelsplit[2] 
@@ -623,9 +677,7 @@ if(side=="less"){symb <- ">="}
 if(side=="greater"){symb <- "<="}
 if(side=="two.sided"){symb <- "="}
 
-
-cat("\n \\pagebreak \n",fill=TRUE)
-cat("\n##Dunnet Sandwich \n", fill=TRUE)
+cat("## Dunnet Sandwich ", fill=TRUE)
 cat("\nThe sandwich function provides a heteroskedasticity-consistent estimate of the covariance matrix. Thus, the sandwich estimate is resistant to the violation of the variance homogeneity assumption.\n", fill=TRUE)
 cat("\\begin{center} Multiple Comparison: Dunnett Contrasts Sandwich \\end{center}", fill=TRUE)
 
@@ -718,7 +770,97 @@ footnote(x2, number = number_2) %>%
 ```
 
 
-```{r, eval=FALSE}
+\pagebreak 
+
+
+```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval, results='asis'}
+cat("\n## Dunnet step-down Sandwich \n", fill=TRUE)
 # MCPs with a control Dunnet step-down, Sandwich
-summary(output_sandwich, test = adjusted(type = "free"))
+## Construct input to mcp2 function which is an update of the original mcp function 
+key <- modelsplit[2] 
+factorlevel <- modelsplit [3]
+lev <- levels(df_factorized[,colnames(df_factorized)==key])
+side <- modelsplit[4]
+if(side=="less"){symb <- ">="}
+if(side=="greater"){symb <- "<="}
+if(side=="two.sided"){symb <- "="}
+#Description above
+cat("\\begin{center} Multiple Comparison: Dunnet Contrasts step-down Sandwich \\end{center}", fill=TRUE)
+if(side == "two.sided"){
+  cat(paste("Test whether the factor level ", factorlevel, " of the factor ", key, " is different from the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,"=0."))  
+}else{
+  cat(paste("Test whether the factor level ", factorlevel, " of the factor ", key, " is ", side, " than the other levels. The Null Hypothesis is for example ", lev[2],"-",factorlevel,symb,"0." ), fill=TRUE)
+}
+
+#compute mcp
+mylist <- list()
+mylist[[key]] <- "Dunnet"
+names(mylist) <- key
+cat("\\small ", fill=TRUE)
+output_sw_sd <- glht(lmfit, linfct = mcp2(mylist), alternative = "less", vcov = sandwich)
+sum_sw_sd <- summary(output_sw_sd, test = adjusted(type = "free"))
+#pretty table
+dunnet_sw_sd <- data.frame("Value"=sum_sw_sd$test$coefficients, 
+                          "Std.Error"= sum_sw_sd$test$sigma, "T-value"=sum_sw_sd$test$tstat,
+                          "P.value"= as.numeric(sum_sw_sd$test$pvalues))
+rownames(dunnet_sw_sd) <- paste(rownames(dunnet_sw_sd),symb,"0")
+dunnet_sw_sd$'Sign. level' <- NA
+dunnet_sw_sd$'Sign. level'[which(abs(dunnet_sw_sd$P.value ) <= 0.001)] <- "***"
+dunnet_sw_sd$'Sign. level'[which(abs(dunnet_sw_sd$P.value) > 0.001)] <- "**"
+dunnet_sw_sd$'Sign. level'[which(abs(dunnet_sw_sd$P.value) > 0.01)] <- "*"
+dunnet_sw_sd$'Sign. level'[which(abs(dunnet_sw_sd$P.value) > 0.05)] <- "."
+dunnet_sw_sd$'Sign. level'[which(abs(dunnet_sw_sd$P.value) > 0.1)] <- " "
+dunnet_sw_sd$'Sign. level'[which(is.na(dunnet_sw_sd$P.value))] <- "-"
+dunnet_sw_sd$P.value <- sapply(dunnet_sw_sd$P.value,pformat)
+names(dunnet_sw_sd)[5] <- paste0(names(dunnet_sw_sd)[5], footnote_marker_number(1, "latex"))
+
+#Interpretation
+#todo Interpretation Dunnet anpassen nach H1
+dunnet_sw_sd$sig <- NA
+for (i in 1:nrow(dunnet_sw_sd)) {
+  if(dunnet_sw_sd[i,]$P.value <= 0.05){
+    dunnet_sw_sd[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(3, "latex"))
+  }else{ 
+    dunnet_sw_sd[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
+}
+# footnote significance codes
+names(dunnet_sw_sd)[6] <- "Significance at 5 percent Type I error"
+fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
+fn2 <- "H1 does not hold significantly."
+fn3 <-  "H1 holds significantly."
+number= c(fn1, fn2, fn3)
+#rownames to column 
+dunnet_sw_sd <- rownames_to_column(dunnet_sw_sd, var="Null Hypothesis") %>% head
+#Output table
+opts <- options(knitr.kable.NA = "")
+x <- knitr::kable(dunnet_sw_sd, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
+footnote(x, number = number) %>%
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+
+
+
+#simoultanous confidence intervals 
+confmcp <- confint(output_sw_sd, level = 0.95) 
+conf_glht <- as.data.frame(confmcp$confint)
+colnames(conf_glht) <- c("Value", "Lower bound", "Upper bound")
+rownames(conf_glht) <- paste(rownames(conf_glht),symb,"0")
+conf_glht$sig <- NA
+for (i in 1:nrow(conf_glht)) {
+  if(sign(conf_glht$`Lower bound`)[i]==sign(conf_glht$`Upper bound`)[i]){
+    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(1, "latex") )
+  }else{ 
+    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
+}
+fn4 <- "Remark: Zero is not in the conidence interval."
+fn5 <- "Remark: Zero is in the confidence interval."
+number_2= c(fn4, fn5)
+colnames(conf_glht)[4] <- "Interpretation"
+conf_glht <- rownames_to_column(conf_glht, var="Null Hypothesis") %>% head
+opts <- options(knitr.kable.NA = "")
+cat("\\begin{center} Simoultaneous Confidence Intervals: Dunnet Contrasts step-down Sandwich \\end{center}", fill=TRUE)
+cat(paste("Simultaneous Confidence Intervals which include the true value of the difference between the reference level ", factorlevel, " and the other levels of ", key), fill=TRUE)
+
+x1 <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
+footnote(x1, number = number_2) %>% 
+  kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```

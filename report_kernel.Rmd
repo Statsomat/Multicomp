@@ -651,9 +651,72 @@ footnote(x, number = number_2) %>%
 ```
 
 
-```{r dunnet_stepdown, eval=FALSE}
+```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval, results = "asis"}
 # MCPs with a control Dunnet step-down 
-summary(output_mcp, test = adjusted(type = "free"))
+cat("## Dunnet Step-Down \n", fill=TRUE)
+mylist <- list()
+mylist[[key]] <- "Dunnet"
+names(mylist) <- key 
+output_mcp <- glht(lmfit, linfct = mcp2(mylist), alternative = side) 
+summcp<- summary(output_mcp, test = adjusted(type = "free"))
+#pretty table
+glht_dunnet <- data.frame("Value"=summcp$test$coefficients, 
+                          "Std.Error"= summcp$test$sigma, "T-value"=summcp$test$tstat,
+                          "P.value"= as.numeric(summcp$test$pvalues))
+rownames(glht_dunnet) <- paste(rownames(glht_dunnet),symb,"0")
+glht_dunnet$'Sign. level' <- NA
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value ) <= 0.001)] <- "***"
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.001)] <- "**"
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.01)] <- "*"
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.05)] <- "."
+glht_dunnet$'Sign. level'[which(abs(glht_dunnet$P.value) > 0.1)] <- " "
+glht_dunnet$'Sign. level'[which(is.na(glht_dunnet$P.value))] <- "-"
+glht_dunnet$P.value <- sapply(glht_dunnet$P.value,pformat)
+names(glht_dunnet)[5] <- paste0(names(glht_dunnet)[5], footnote_marker_number(1, "latex"))
+#Interpretation
+#TODO Interpretation Dunnet anpassen nach H1
+glht_dunnet$sig <- NA
+for (i in 1:nrow(glht_dunnet)) {
+  if(glht_dunnet[i,]$P.value <= 0.05){
+    glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(3, "latex"))
+  }else{ 
+    glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
+}
+# footnote significance codes
+names(glht_dunnet)[6] <- "Significance at 5 percent Type I error"
+fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
+fn2 <- "H1 does not hold significantly."
+fn3 <-  "H1 holds significantly."
+number= c(fn1, fn2, fn3)
+#rownames to column 
+glht_dunnet <- rownames_to_column(glht_dunnet, var="Null Hypothesis") %>% head
+#Output table
+opts <- options(knitr.kable.NA = "")
+x <- knitr::kable(glht_dunnet, digits=2, escape = F, linesep = '', caption="Multiple Comparison: Dunnet Contrasts", longtable = T)
+footnote(x, number = number) %>%
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+#simoultanous confidence intervals 
+cat(paste("Simultaneous Confidence Intervals which includes the true value of the difference between the reference level ", factorlevel, " and the other levels of ", key), fill=TRUE)
+confmcp <- confint(output_mcp, level = 0.95) 
+conf_glht <- as.data.frame(confmcp$confint)
+colnames(conf_glht) <- c("Value", "Lower bound", "Upper bound")
+rownames(conf_glht) <- paste(rownames(conf_glht),symb,"0")
+conf_glht$sig <- NA
+for (i in 1:nrow(conf_glht)) {
+  if(sign(conf_glht$`Lower bound`)[i]==sign(conf_glht$`Upper bound`)[i]){
+    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(1, "latex") )
+  }else{ 
+    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
+}
+fn4 <- "Remark: Zero is not in the conidence interval."
+fn5 <- "Remark: Zero is in the confidence interval."
+number_2= c(fn4, fn5)
+colnames(conf_glht)[4] <- "Interpretation"
+conf_glht <- rownames_to_column(conf_glht, var="Null Hypothesis") %>% head
+opts <- options(knitr.kable.NA = "")
+x <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption="Simoultaneous Confidence Intervals: Dunnet Contrasts", longtable = T)
+footnote(x, number = number_2) %>% 
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
 \pagebreak 
@@ -766,7 +829,7 @@ footnote(x2, number = number_2) %>%
 
 
 ```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval, results='asis'}
-cat("\n## dunnet_stepdown_sandwich \n", fill=TRUE)
+cat("\n## Dunnet Step-Down Sandwich \n", fill=TRUE)
 # MCPs with a control Dunnet step-down, Sandwich
 ## Construct input to mcp2 function which is an update of the original mcp function 
 key <- modelsplit[2] 

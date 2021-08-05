@@ -65,7 +65,7 @@ shinyUI(fluidPage(
   
   tags$div(a(img(src='Logo.jpg', width=200), href="https://www.statsomat.com", target="_blank")),
   
-  h1("Multicomp (with R)", 
+  h1("Multiple Comparison Procedures with a Control", 
      style = "font-family: 'Helvetica';
      color: #fff; text-align: center;
      background-color: #396e9f;
@@ -137,7 +137,7 @@ shinyUI(fluidPage(
                       
                       tags$style(type="text/css", "textarea {height:100px}"),
                       
-                      tags$textarea(id="text", placeholder="weight ~ dose + gesttime + number", rows=5, cols=80,""),
+                      tags$textarea(id="text", placeholder="breaks ~ wool*tension", rows=5, cols=60,""),
                       
                       br(),
                       br(),
@@ -167,7 +167,7 @@ shinyUI(fluidPage(
                      
                      h3("Click to Generate Results"),
                      
-                     radioButtons('rcode', '', c('Data Analysis Report (PDF)', 'Python Code (HTML)'), inline = TRUE),
+                     radioButtons('rcode', '', c('Data Analysis Report (PDF)', 'R Code'), inline = TRUE),
                      
                      
                      actionButton("generate", "", style="

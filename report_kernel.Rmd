@@ -36,13 +36,22 @@ tryCatch({
   
   # Get data
   df <- params$data
-
-# Save copies for other purposes 
+  
+  # Save a copy
   df_code <- df
+  
+  # Extract variables to keep 
+  terms <- terms.formula(as.formula(params$model)) 
+  terms2 <- rownames(attr(terms,"factors"))
+  
+  # Restrict df to variables from the formula
+  df <- df[,terms2,drop=FALSE]
+  
+  # Save a copy
   df2 <- df
   
   # Initialize next computations
-   eval0 <- TRUE
+  eval0 <- TRUE
    
 }, error=function(e) {
   
@@ -194,7 +203,7 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 
 ```{r modelinformation, eval = eval, results = "asis"}
 
-# Save all model information 
+# Save all model information into a vector 
 modelsplit <- c(params$model, params$fact, params$ref, params$alternative)
 
 # List model information

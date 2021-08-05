@@ -5,3 +5,4 @@
 wrapper.R
 report.pdf
 rsconnect/shinyapps.io/statsomat/Multicomp.dcf
+*.pdf

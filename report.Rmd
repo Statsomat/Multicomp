@@ -18,9 +18,11 @@ params:
   fencoding: NA
   decimal: NA
   enc_guessed: NA
-  vars1: NA
   model: NA
   cont_crit: NA
+  fact: NA
+  ref: NA
+  alternative: NA
 header-includes:
    - \usepackage{xcolor}
    - \setmainfont[BoldFont=FiraSans-Bold, Extension=.otf]{FiraSans-Regular}
@@ -29,23 +31,8 @@ header-includes:
    - \usepackage{float}
 ---
 
-\pagebreak
 
 
 ```{r child = 'report_kernel.Rmd', eval = TRUE}
 ```
 
-
-```{r include = FALSE}
-if (exists("eval")) ref_indic <- eval else ref_indic <- FALSE
-```
-  
-  
-```{r, results="asis", eval = ref_indic, echo=FALSE}
-cat("\n# References", fill=TRUE)
-# Add below the option to print the references even if not cited. 
-```
- 
----
-nocite: '@*'
-...

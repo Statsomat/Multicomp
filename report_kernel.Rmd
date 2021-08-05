@@ -19,11 +19,11 @@ library(stringr) # for strings
 library(tibble) #for rownames to columns
 library(HH) # hovplot 
 library(onewaytests) #bf test
+library(s20x) # levene
 ```
 
 
 ```{r getdata}
-
 # Initialize evaluation of chunks
 eval0 <- FALSE
 eval <- FALSE
@@ -476,26 +476,29 @@ if(length(df_cat_factor)==1L) {
 
 
 ```{r bftest1, dev="cairo_pdf", eval = eval,  results="asis"}
+cat("\\pagebreak ", fill=TRUE)
 # Homogeneity of Variances, Brown and Forsythe Test
 cat("##  Homogeneity of Variances", fill=TRUE)
 alphahomog <- 0.1
 ```
 
-
-```{r bftest2, dev="cairo_pdf", eval = oneway}
-# Homogeneity of Variances, Brown and Forsythe Test
+```{r bftest2, dev="cairo_pdf", eval = oneway, results="asis"}
+# Title
 cat("###  Brown and Forsyth Test of Homogeneity of Variances", fill=TRUE)
+```
+
+
+```{r bftest3, dev="cairo_pdf", eval = oneway}
 hov(as.formula(modelfunction), data = df_factorized)
 bf <- hov(as.formula(modelfunction), data = df_factorized)
 
 if (bf$p.value <= alphahomog) {
-   cat("Warning: Group variances significantly heterogeneous at 1% error! The Analysis of Variance may not be valid. ", fill=TRUE)
+   cat("Warning: Group variances significantly heterogeneous at 10% error! The Analysis of Variance may not be valid. ", fill=TRUE)
 } else {
    cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)
    homogtest <- TRUE
 }
 ```
-
 
 ```{r hovplot, dev="cairo_pdf", eval=oneway, results="asis", fig.width=8, fig.cap="Homogeneity of Variance Plot"}
 # Brown and Forsythe Plot
@@ -507,28 +510,33 @@ cat("\\newline ", fill=TRUE)
 cat("Interpretation: The response variable is denoted by y. The fist of the three plots contains boxplots of each level of the independent variable. In the second plot, the response variable y is centered by its median, such that the median of the transformation equals 0. In the third plot, the absolute deviations from the median of the response y are shown. The Brown and Forsyth test statistic is the F statistic resulting from an ordinary one-way analysis of variance on the data points in the third panel (on the absolute deviations from the median). ", fill=TRUE)
 ```
 
-
-```{r levene, dev="cairo_pdf", eval=eval, results="asis"}
+\pagebreak 
+ 
+```{r levene, dev = "cairo_pdf", eval = eval, results="asis"}
 cat("### Levene Test of Homogeneity of Variances ", fill=TRUE)
+```
 
-lev = leveneTest(as.formula(modelfunction), data = df_factorized)
-lev2 <- as.data.frame(lev)
-knitr::kable(lev2 , digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T) %>%
-  kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+```{r levene2, dev = "cairo_pdf", eval = eval}
+levene.test(as.formula(modelfunction), data = df_factorized)
+```
 
-if(lev$`Pr(>F)`[1] <= alphahomog) {
-     cat("Warning: Group variances significantly heterogeneous at 1% error! The Analysis of Variance may not be valid. ", fill=TRUE) 
-     homogtest <- FALSE
+```{r levene3, dev="cairo_pdf", include=FALSE, results="asis"}
+leveneobj <- levene.test(as.formula(modelfunction), data = df_factorized)
+```
+
+```{r levene4, dev = "cairo_pdf", eval = eval, results="asis"}
+if (leveneobj$p.value <= alphahomog) {
+   cat("Warning: Group variances significantly heterogeneous at 10% error! The Analysis of Variance may not be valid. ", fill=TRUE)
+   homogtest <- FALSE
 } else {
    cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)
    homogtest <- TRUE
-  }
+}
 ```
 
+\pagebreak
 
 ```{r Dunnet, eval=eval, results='asis', dev="cairo_pdf"}
-cat("\n \\pagebreak \n",fill=TRUE)
-
 cat("\n# Multiple Comparisons of Means to a Control \n", fill=TRUE)
 #cat("\\small ", fill=TRUE)
 cat("Theoretical background: Testing multiple hypotheses simultaneously and each at the same pre-specified significance level, increases the probability of false positive effects. The probability to commit at least one false positive decision increases with the number of hypotheses. A solution to overcome this problem is given by multiple comparisons procedures. Here, we do not control the per-hypothesis Type I error but the probability of committing at least one Type I error over all hypotheses. Using p-values adjusted for multiplicity, individual hypotheses can be finally compared with the pre-specified significance level.",fill=TRUE)
@@ -650,6 +658,7 @@ footnote(x, number = number_2) %>%
 
 ```
 
+\pagebreak
 
 ```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval, results = "asis"}
 # MCPs with a control Dunnet step-down 
@@ -919,7 +928,6 @@ x1 <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption=cat(" 
 footnote(x1, number = number_2) %>% 
   kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
-
 
 
 ```{r, results="asis", eval = eval, echo=FALSE}

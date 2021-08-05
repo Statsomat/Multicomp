@@ -18,9 +18,11 @@ params:
   fencoding: NA
   decimal: NA
   enc_guessed: NA
-  vars1: NA
   model: NA
   cont_crit: NA
+  fact: NA
+  ref: NA
+  alternative: NA
 header-includes:
    - \usepackage{xcolor}
    - \setmainfont[BoldFont=FiraSans-Bold, Extension=.otf]{FiraSans-Regular}

@@ -23,11 +23,6 @@ library(onewaytests) #bf test
 
 
 ```{r getdata}
-# Get data
-df <- params$data
-
-# Save a copy for other purposes 
-df_code <- df
 
 # Initialize evaluation of chunks
 eval0 <- FALSE
@@ -39,21 +34,21 @@ homogtest <- FALSE
 # Apply selection of variables 
 tryCatch({
   
-  df <- df[,params$vars1,drop=FALSE]
+  # Get data
+  df <- params$data
+
+# Save copies for other purposes 
+  df_code <- df
   df2 <- df
   
   # Initialize next computations
-  eval0 <- TRUE
+   eval0 <- TRUE
+   
 }, error=function(e) {
   
   stop(safeError("Please try other column names for the following columns: "))
-}
-)
-# Post error for selection 
-if (length(setdiff(params$vars1,colnames(df))) >0) {
-  equal <- intersect(colnames(df),params$vars1)
-  kable(setdiff(params$vars1,equal),col.names = "Column")
-}
+})
+
 ```
 
 
@@ -199,11 +194,8 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 
 ```{r modelinformation, eval = eval, results = "asis"}
 
-# Split the text area containing the model information 
-model <- params$model
-modelsplit <- unlist(strsplit(model, split="\n"))
-modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
-modelsplit <- modelsplit[modelsplit != ""]
+# Save all model information 
+modelsplit <- c(params$model, params$fact, params$ref, params$alternative)
 
 # List model information
 cat("# Model Information", fill=TRUE)
@@ -659,14 +651,14 @@ footnote(x, number = number_2) %>%
 ```
 
 
-```{r, eval=FALSE}
+```{r dunnet_stepdown, eval=FALSE}
 # MCPs with a control Dunnet step-down 
 summary(output_mcp, test = adjusted(type = "free"))
 ```
 
 \pagebreak 
 
-```{r, dev = "cairo_pdf", eval = eval, results = "asis"}
+```{r dunnet_sandwich, dev = "cairo_pdf", eval = eval, results = "asis"}
 # MCPs with a control Dunnet Sandwich
 
 key <- modelsplit[2] 
@@ -774,7 +766,7 @@ footnote(x2, number = number_2) %>%
 
 
 ```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval, results='asis'}
-cat("\n## Dunnet step-down Sandwich \n", fill=TRUE)
+cat("\n## dunnet_stepdown_sandwich \n", fill=TRUE)
 # MCPs with a control Dunnet step-down, Sandwich
 ## Construct input to mcp2 function which is an update of the original mcp function 
 key <- modelsplit[2] 
@@ -864,3 +856,15 @@ x1 <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption=cat(" 
 footnote(x1, number = number_2) %>% 
   kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
+
+
+
+```{r, results="asis", eval = eval, echo=FALSE}
+cat("\n# References", fill=TRUE)
+```
+ 
+---
+nocite: '@*'
+...
+
+

@@ -10,7 +10,7 @@ library(knitr) # for tables
 library(kableExtra) # for tables 
 library(multcomp) # mcp
 library(sandwich) # sandwich
-library(car) # type III Anova tests
+library(car) # type III Anova tests, levene
 library(psych) # multi.hist
 library(formula.tools) #for formula lhs
 library(PerformanceAnalytics) # Scatterplot
@@ -19,7 +19,6 @@ library(stringr) # for strings
 library(tibble) #for rownames to columns
 library(HH) # hovplot 
 library(onewaytests) #bf test
-library(s20x) # levene
 ```
 
 
@@ -27,9 +26,11 @@ library(s20x) # levene
 # Initialize evaluation of chunks
 eval0 <- FALSE
 eval <- FALSE
+eval_model <- FALSE
 eval_rows <- FALSE
 oneway <- FALSE
 homogtest <- FALSE
+evallevene <- FALSE
 
 # Apply selection of variables 
 tryCatch({
@@ -55,7 +56,7 @@ tryCatch({
    
 }, error=function(e) {
   
-  stop(safeError("Please try other column names for the following columns: "))
+  stop(safeError("The model function seems to be wrong. We cannot prepare the dataset. "))
 })
 
 ```
@@ -239,13 +240,16 @@ if (length(which(complete_rate < 0.90)) != 0L){
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 }
 
-if (nrow(as.data.frame(df_factorized[complete.cases(df_factorized),])) < 10){
-  cat("**Error: Minimum 10 complete cases required. **")
+if (nrow(as.data.frame(df_factorized[complete.cases(df_factorized),])) < 15){
+  cat("**Error: Minimum 15 complete cases required. **")
   eval <- FALSE
 }
 
-
-df_factorized<-as.data.frame(df_factorized[complete.cases(df_factorized),])
+# Restrict to complete cases 
+if (length(which(complete_rate < 1)) != 0L){
+  df_factorized <- as.data.frame(df_factorized[complete.cases(df_factorized),])
+  cat("Warning: There are missing values in the dataset. We will consider in what follows only the complete cases. ", fill=TRUE)
+  }
 ```
 
 
@@ -334,16 +338,16 @@ tryCatch({
   lmfit <- lm(modelfunction, data = df_factorized)
   
   ## Initialize next computations
-  eval2 <- TRUE
+  eval_model <- TRUE
 }, error=function(e) {
   
-  stop(safeError("Error: The model function could not be fitted to the data."))
+  stop(safeError("Error: The model function could not be fitted to the data. "))
   
 }
 )
 ```
 
-```{r Parametertable, dev="cairo_pdf", eval = eval, results='asis'}
+```{r Parametertable, dev="cairo_pdf", eval = eval_model, results='asis'}
 # Table Parameter estimates
 cat("\n \\pagebreak \n",fill=TRUE)
 cat("\n# Analysis of Variance  \n", fill=TRUE)
@@ -403,7 +407,7 @@ footnote(x, number = number) %>%
 ```
 
 
-```{r type3, dev="cairo_pdf", eval=eval, results='asis'}
+```{r type3, dev="cairo_pdf", eval=eval_model, results='asis'}
 # Type III tests 
 a = Anova(lmfit, type=3)
 #Create dataframe
@@ -439,7 +443,7 @@ x1 <- knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" "
 kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
-```{r GoodnessOfFit, dev="cairo_pdf", eval = eval, results='asis'}
+```{r GoodnessOfFit, dev="cairo_pdf", eval = eval_model, results='asis'}
 sum.lmfit <- summary(lmfit)
 
 GoF <- data.frame('Values'=c('Multiple R-Squared'=sum.lmfit$r.squared,
@@ -470,34 +474,34 @@ kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HO
 
 ```
 
-```{r diagnosticplots, dev="cairo_pdf", eval=eval, results="asis"}
+```{r diagnosticplots, dev="cairo_pdf", eval=eval_model, results="asis"}
 cat("# Diagnostics", fill=TRUE) 
 cat("## Diagnostic Plots ", fill=TRUE) 
 layout(matrix(c(1,2,3,4),2,2)) 
 plot(lmfit) 
 ```
 
-```{r def_control_homog, eval=eval}
-if(length(df_cat_factor)==1L) {
-  oneway <- TRUE
-}
+```{r def_control_homog, eval = eval_model}
+# Define execution especially for a one-way model 
+oneway <- as.logical(eval_model*(length(df_cat_factor)==1L))
 ```
 
 
-```{r bftest1, dev="cairo_pdf", eval = eval,  results="asis"}
+```{r titlevariances, dev="cairo_pdf", eval = eval_model,  results="asis"}
 cat("\\pagebreak ", fill=TRUE)
-# Homogeneity of Variances, Brown and Forsythe Test
+# Homogeneity of Variances
 cat("##  Homogeneity of Variances", fill=TRUE)
+# Alpha for the homogeneity tests 
 alphahomog <- 0.1
 ```
 
-```{r bftest2, dev="cairo_pdf", eval = oneway, results="asis"}
-# Title
+```{r bftest, dev="cairo_pdf", eval = oneway, results="asis"}
+# Title Brown and Forsyth Test
 cat("###  Brown and Forsyth Test of Homogeneity of Variances", fill=TRUE)
 ```
 
 
-```{r bftest3, dev="cairo_pdf", eval = oneway}
+```{r bftest2, dev="cairo_pdf", eval = oneway}
 hov(as.formula(modelfunction), data = df_factorized)
 bf <- hov(as.formula(modelfunction), data = df_factorized)
 
@@ -518,23 +522,32 @@ hovPlot(as.formula(modelfunction), data = df_factorized)
 cat("\\newline ", fill=TRUE)
 cat("Interpretation: The response variable is denoted by y. The fist of the three plots contains boxplots of each level of the independent variable. In the second plot, the response variable y is centered by its median, such that the median of the transformation equals 0. In the third plot, the absolute deviations from the median of the response y are shown. The Brown and Forsyth test statistic is the F statistic resulting from an ordinary one-way analysis of variance on the data points in the third panel (on the absolute deviations from the median). ", fill=TRUE)
 ```
-
-\pagebreak 
  
-```{r levene, dev = "cairo_pdf", eval = eval, results="asis"}
+```{r levene0, eval = oneway, results="asis"}
+cat("\\pagebreak")
+``` 
+ 
+```{r levene, eval = eval, results="asis"}
 cat("### Levene Test of Homogeneity of Variances ", fill=TRUE)
 ```
 
-```{r levene2, dev = "cairo_pdf", eval = eval}
-levene.test(as.formula(modelfunction), data = df_factorized)
+```{r levene2, eval = eval}
+tryCatch({
+  
+  leveneobj <- leveneTest(as.formula(modelfunction), data = df_factorized)
+  evallevene <- TRUE
+  
+}, error = function(e) {e})
 ```
 
-```{r levene3, dev="cairo_pdf", include=FALSE, results="asis"}
-leveneobj <- levene.test(as.formula(modelfunction), data = df_factorized)
+
+```{r levene3, eval = evallevene}
+ leveneTest(as.formula(modelfunction), data = df_factorized)
 ```
 
-```{r levene4, dev = "cairo_pdf", eval = eval, results="asis"}
-if (leveneobj$p.value <= alphahomog) {
+
+```{r levene4, dev = "cairo_pdf", eval = evallevene, results="asis"}
+if (leveneobj$`Pr(>F)`[1] <= alphahomog) {
    cat("Warning: Group variances significantly heterogeneous at 10% error! The Analysis of Variance may not be valid. ", fill=TRUE)
    homogtest <- FALSE
 } else {
@@ -939,12 +952,10 @@ footnote(x1, number = number_2) %>%
 ```
 
 
-```{r, results="asis", eval = eval, echo=FALSE}
+```{r, results="asis", eval = eval_model, echo=FALSE}
 cat("\n# References", fill=TRUE)
+cat("---")
+cat("nocite: '@*'")
+cat("...")
 ```
  
----
-nocite: '@*'
-...
-
-

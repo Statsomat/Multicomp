@@ -286,13 +286,22 @@ curve(dnorm(x,m,s), add=TRUE, lty=dlty[2], col=dcol[2])
 cat("\n \\newline \n ", fill=TRUE)
 boxplot(x, col = "#2fa42d", main = paste("Boxplot of",lhs(modelfunction)),
           xlab=paste(lhs(modelfunction)), horizontal = TRUE)
+```
+
+
+```{r descplots2, dev="cairo_pdf", eval=eval, results='asis'}
 cat("\n \\pagebreak \n",fill=TRUE)
+
 # Boxplot for categorical IV
-cat("## Dependent Against Categorical Factors \n", fill=TRUE)
-for (i in 1:ncol(df_cat)) {
-    boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
-  cat("\n \\pagebreak \n",fill=TRUE)
+# Only if categorical on the rhs
+if(modelsplit[2] %in% colnames(df_cat)){
+  cat("## Dependent Against Categorical Factors \n", fill=TRUE)
+  for (i in 1:ncol(df_cat)) {
+      boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
+    cat("\n \\pagebreak \n",fill=TRUE)
+  }
 }
+
 cat("\n \\pagebreak \n",fill=TRUE)
 # Scatterplot for numerical IV
 df_cont_iv <- df_cont[which(colnames(df_cont)!=lhs(modelfunction))]
@@ -305,6 +314,8 @@ if (ncol(df_cont_iv)>0) {
     chart.Correlation(df_cont_iv, col = "#2fa42d", main=paste("Correlation Plot of numerical independent Variables"))
   }
 }
+
+
 cat("\n \\pagebreak \n",fill=TRUE)
 # Interaction Plot
 if(ncol(df_cat)>=2){
@@ -322,11 +333,25 @@ if(ncol(df_cat)>=2){
 
 ```{r relevel, eval=eval}
 # Relevel factor of interest 
-factor_index <- which(colnames(df_factorized) == modelsplit[2])
-df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = modelsplit[3])
+
+tryCatch({
+  
+  factor_index <- which(colnames(df_factorized) == modelsplit[2])
+  df_factorized[,factor_index] <- relevel(df_factorized[,factor_index], ref = modelsplit[3])
+
+  ## Initialize next computations
+  eval_model <- TRUE
+  
+}, error=function(e) {
+  
+  e
+  cat("Error: The factor of interest cannot be releveled. Execution stopped. ")
+  
+}
+)
 ```
 
-```{r fitmodel, eval=eval}
+```{r fitmodel, eval = eval_model}
 # Set effect coding for the rest of the factors, relevant for the type III Anova table 
 for (i in 1:ncol(df_factorized)) {
   if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
@@ -339,6 +364,7 @@ tryCatch({
   
   ## Initialize next computations
   eval_model <- TRUE
+  
 }, error=function(e) {
   
   stop(safeError("Error: The model function could not be fitted to the data. "))
@@ -527,11 +553,11 @@ cat("Interpretation: The response variable is denoted by y. The fist of the thre
 cat("\\pagebreak")
 ``` 
  
-```{r levene, eval = eval, results="asis"}
+```{r levene, eval = eval_model, results="asis"}
 cat("### Levene Test of Homogeneity of Variances ", fill=TRUE)
 ```
 
-```{r levene2, eval = eval}
+```{r levene2, eval = eval_model}
 tryCatch({
   
   leveneobj <- leveneTest(as.formula(modelfunction), data = df_factorized)
@@ -558,7 +584,7 @@ if (leveneobj$`Pr(>F)`[1] <= alphahomog) {
 
 \pagebreak
 
-```{r Dunnet, eval=eval, results='asis', dev="cairo_pdf"}
+```{r Dunnet, eval=eval_model, results='asis', dev="cairo_pdf"}
 cat("\n# Multiple Comparisons of Means to a Control \n", fill=TRUE)
 #cat("\\small ", fill=TRUE)
 cat("Theoretical background: Testing multiple hypotheses simultaneously and each at the same pre-specified significance level, increases the probability of false positive effects. The probability to commit at least one false positive decision increases with the number of hypotheses. A solution to overcome this problem is given by multiple comparisons procedures. Here, we do not control the per-hypothesis Type I error but the probability of committing at least one Type I error over all hypotheses. Using p-values adjusted for multiplicity, individual hypotheses can be finally compared with the pre-specified significance level.",fill=TRUE)
@@ -682,7 +708,7 @@ footnote(x, number = number_2) %>%
 
 \pagebreak
 
-```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval, results = "asis"}
+```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval_model, results = "asis"}
 # MCPs with a control Dunnet step-down 
 cat("## Dunnet Step-Down \n", fill=TRUE)
 mylist <- list()
@@ -752,7 +778,7 @@ footnote(x, number = number_2) %>%
 
 \pagebreak 
 
-```{r dunnet_sandwich, dev = "cairo_pdf", eval = eval, results = "asis"}
+```{r dunnet_sandwich, dev = "cairo_pdf", eval = eval_model, results = "asis"}
 # MCPs with a control Dunnet Sandwich
 
 key <- modelsplit[2] 
@@ -859,7 +885,7 @@ footnote(x2, number = number_2) %>%
 \pagebreak 
 
 
-```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval, results='asis'}
+```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval_model, results='asis'}
 cat("\n## Dunnet Step-Down Sandwich \n", fill=TRUE)
 # MCPs with a control Dunnet step-down, Sandwich
 ## Construct input to mcp2 function which is an update of the original mcp function 
@@ -937,7 +963,7 @@ for (i in 1:nrow(conf_glht)) {
   }else{ 
     conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
 }
-fn4 <- "Remark: Zero is not in the conidence interval."
+fn4 <- "Remark: Zero is not in the confidence interval."
 fn5 <- "Remark: Zero is in the confidence interval."
 number_2= c(fn4, fn5)
 colnames(conf_glht)[4] <- "Interpretation"
@@ -952,10 +978,11 @@ footnote(x1, number = number_2) %>%
 ```
 
 
-```{r, results="asis", eval = eval_model, echo=FALSE}
-cat("\n# References", fill=TRUE)
-cat("---")
-cat("nocite: '@*'")
-cat("...")
+```{r references, results="asis"}
+cat("# References", fill=TRUE)
 ```
+ 
+---
+nocite: '@*'
+...
  

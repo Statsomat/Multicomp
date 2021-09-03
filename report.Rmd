@@ -1,6 +1,6 @@
 ---
 title: "Multiple Comparison Procedures To A Control"
-subtitle: "For AN(C)OVA Models"
+subtitle: "The Dunnet Test"
 author: 
   - Denise Welsch
   - Contributors^[Viktoria Daum, Linda Müller, Damian Nink, Simone Schüttler, Daniela Wüller]

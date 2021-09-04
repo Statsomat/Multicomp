@@ -203,22 +203,15 @@ function(input, output, session) {
   })
   
   
-  # Stop if column names not distinct or if too many columns selected
+  # Stop if if too many columns selected
   observe({
     
     req(input$file, datainput())
     
     removeModal()
     
-    if (length(unique(input$selection1$left)) != length(input$selection1$left)){
-      showNotification("Error: The columns names are not distinct. Rename columns and restart the app.", duration=30)
-      Sys.sleep(5)
-      session$close()
-    }
-    
-    
-    if (length(input$selection1$right) > 25 ){
-      showNotification("Maximum number of columns exceeded. For more contact: support@statsomat.com", duration=30)
+    if (length(input$selection1$right) > 1 ){
+      showNotification("Please select only one factor of interest. ", duration=30)
       Sys.sleep(5)
       session$close()
     }
@@ -237,10 +230,8 @@ function(input, output, session) {
     src0 <- normalizePath('report_kernel.Rmd') 
     src1 <- normalizePath('report.Rmd')
     src2 <- normalizePath('references.bib')
-    src3 <- normalizePath('report_code_container.Rmd') 
-    src4 <- normalizePath('report_code.Rmd') 
-    src5 <- normalizePath('FiraSans-Bold.otf')
-    src6 <- normalizePath('FiraSans-Regular.otf')
+    src3 <- normalizePath('FiraSans-Bold.otf')
+    src4 <- normalizePath('FiraSans-Regular.otf')
     
     # Temporarily switch to the temp dir
     owd <- setwd(tempdir())
@@ -248,10 +239,8 @@ function(input, output, session) {
     file.copy(src0, 'report_kernel.Rmd', overwrite = TRUE)
     file.copy(src1, 'report.Rmd', overwrite = TRUE)
     file.copy(src2, 'references.bib', overwrite = TRUE)
-    file.copy(src3, 'report_code_container.Rmd', overwrite = TRUE)
-    file.copy(src4, 'report_code.Rmd', overwrite = TRUE)
-    file.copy(src5, 'FiraSans-Bold.otf', overwrite = TRUE)
-    file.copy(src6, 'FiraSans-Regular.otf', overwrite = TRUE)
+    file.copy(src3, 'FiraSans-Bold.otf', overwrite = TRUE)
+    file.copy(src4, 'FiraSans-Regular.otf', overwrite = TRUE)
     
     # Set up parameters to pass to Rmd document
     enc_guessed <- guess_encoding(input$file$datapath)
@@ -271,22 +260,11 @@ function(input, output, session) {
           Sys.sleep(0.25)
           
         }
-      
-        if (input$rcode == "Data Analysis Report (PDF)"){
           
-          tmp_file <- render('report.Rmd', pdf_document(latex_engine = "xelatex"),
-                        params = params,
-                        envir = new.env(parent = globalenv())
-          )
-          
-        } else {
-        
-          tmp_file <- render('report_code_container.Rmd', html_document(),
+        tmp_file <- render('report.Rmd', pdf_document(latex_engine = "xelatex"), 
                              params = params,
                              envir = new.env(parent = globalenv())
                              )
-          
-        }
     
         report$filepath <- tmp_file 
     
@@ -319,18 +297,11 @@ function(input, output, session) {
   output$download <- downloadHandler(
     
     filename = function() {
-      
-      if (input$rcode == "Data Analysis Report (PDF)"){
         paste('MyReport',sep = '.','pdf')
-      } else {
-        paste('MyCode',sep = '.','html')
-      }
     },
     
     content = function(file) {
-
       file.copy(report$filepath, file)
-         
     }
   )
   

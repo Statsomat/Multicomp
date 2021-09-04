@@ -27,6 +27,8 @@ library(onewaytests) #bf test
 eval0 <- FALSE
 eval <- FALSE
 eval_model <- FALSE
+eval_model2 <- FALSE
+eval_model3 <- FALSE
 eval_rows <- FALSE
 oneway <- FALSE
 homogtest <- FALSE
@@ -254,53 +256,74 @@ if (length(which(complete_rate < 1)) != 0L){
 
 
 ```{r descplots, dev="cairo_pdf", eval=eval, results='asis'}
+
 cat("# Descriptive Plots \n", fill=TRUE)
 cat("\n \\small \n ", fill=TRUE)
-cat("## Dependent Variable \n", fill=TRUE)
-#Histogram and Boxplot for DV
-modelfunction = as.formula(modelsplit[1])
-x <- unlist(df_factorized[which(colnames(df_factorized)==lhs(modelfunction))])
-x <- as.numeric(x)
-main = paste("Histogram of",lhs(modelfunction))
-ylab="Relative Frequency"
-xlab= as_string(lhs(modelfunction))
-freq=FALSE
-bcol="#2fa42d"
-dcol=c("#396e9f","#396e9f")
-dlty=c("dotted", "solid")
-breaks=21 
-  
-h <- hist(x, plot=FALSE, breaks=breaks)
-m <- mean(x, na.rm=TRUE)
-s <- sd(x, na.rm=TRUE)
-d <- density(x, na.rm=TRUE)
-# Set nice x and y axis limits
-xlims <- pretty(c(floor(h$breaks[1]),ceiling(last(h$breaks))))
-ymax <- max(h$density)
-dmax <- max(d$y)
-ymax <- max(ymax,dmax)
-# Plots
-plot(h, freq=freq, ylim=c(0, ymax*1.2), ylab=ylab, xlab=xlab, main=main, col=bcol, xlim = c(min(xlims), max(xlims)))
-lines(d, lty=dlty[1], col=dcol[1])
-curve(dnorm(x,m,s), add=TRUE, lty=dlty[2], col=dcol[2])
-cat("\n \\newline \n ", fill=TRUE)
-boxplot(x, col = "#2fa42d", main = paste("Boxplot of",lhs(modelfunction)),
-          xlab=paste(lhs(modelfunction)), horizontal = TRUE)
+
+tryCatch({
+
+    cat("## Dependent Variable \n", fill=TRUE)
+    #Histogram and Boxplot for DV
+    modelfunction = as.formula(modelsplit[1])
+    x <- unlist(df_factorized[which(colnames(df_factorized)==lhs(modelfunction))])
+    x <- as.numeric(x)
+    main = paste("Histogram of",lhs(modelfunction))
+    ylab="Relative Frequency"
+    xlab= as_string(lhs(modelfunction))
+    freq=FALSE
+    bcol="#2fa42d"
+    dcol=c("#396e9f","#396e9f")
+    dlty=c("dotted", "solid")
+    breaks=21 
+      
+    h <- hist(x, plot=FALSE, breaks=breaks)
+    m <- mean(x, na.rm=TRUE)
+    s <- sd(x, na.rm=TRUE)
+    d <- density(x, na.rm=TRUE)
+    # Set nice x and y axis limits
+    xlims <- pretty(c(floor(h$breaks[1]),ceiling(last(h$breaks))))
+    ymax <- max(h$density)
+    dmax <- max(d$y)
+    ymax <- max(ymax,dmax)
+    # Plots
+    plot(h, freq=freq, ylim=c(0, ymax*1.2), ylab=ylab, xlab=xlab, main=main, col=bcol, xlim = c(min(xlims), max(xlims)))
+    lines(d, lty=dlty[1], col=dcol[1])
+    curve(dnorm(x,m,s), add=TRUE, lty=dlty[2], col=dcol[2])
+    cat("\n \\newline \n ", fill=TRUE)
+    boxplot(x, col = "#2fa42d", main = paste("Boxplot of",lhs(modelfunction)),
+              xlab=paste(lhs(modelfunction)), horizontal = TRUE)
+
+}, error=function(e) {
+ cat("Error: This plot cannot be generated. ")
+  }
+)
 ```
 
 
 ```{r descplots2, dev="cairo_pdf", eval=eval, results='asis'}
-cat("\n \\pagebreak \n",fill=TRUE)
-
-# Boxplot for categorical IV
-# Only if categorical on the rhs
-if(modelsplit[2] %in% colnames(df_cat)){
-  cat("## Dependent Against Categorical Factors \n", fill=TRUE)
-  for (i in 1:ncol(df_cat)) {
-      boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
-    cat("\n \\pagebreak \n",fill=TRUE)
+tryCatch({
+  
+  cat("\n \\pagebreak \n",fill=TRUE)
+  
+  # Boxplot for categorical IV
+  # Only if categorical on the rhs
+  if(modelsplit[2] %in% colnames(df_cat)){
+    cat("## Dependent Against Categorical Factors \n", fill=TRUE)
+    for (i in 1:ncol(df_cat)) {
+        boxplot(as.formula(paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), data=df_factorized, col = "#2fa42d", main=paste("Boxplot of",paste(lhs(modelfunction), "~" , colnames(df_cat)[i])), horizontal = FALSE )
+      cat("\n \\pagebreak \n",fill=TRUE)
+    }
   }
-}
+
+
+}, error=function(e) {
+  cat("Error: This plot cannot be generated. ")
+  }
+)
+```
+
+```{r descplots3, dev="cairo_pdf", eval=eval, results='asis'}
+tryCatch({
 
 cat("\n \\pagebreak \n",fill=TRUE)
 # Scatterplot for numerical IV
@@ -316,18 +339,32 @@ if (ncol(df_cont_iv)>0) {
 }
 
 
-cat("\n \\pagebreak \n",fill=TRUE)
-# Interaction Plot
-if(ncol(df_cat)>=2){
-  cat("## Interaction Plot for Factors \n", fill=TRUE)
-  cat("\n Note: The more parallel the lines, the less likely is the significance of the interaction of the factors. \n", fill=TRUE)
-  for (i in 1:(ncol(df_cat)-1)) {
-    for (j in (i+1):ncol(df_cat)) {
-      interaction.plot(df_cat[,i], df_cat[,j], x, xlab= colnames(df_cat)[i], trace.label = colnames(df_cat)[j], ylab=paste("mean of", lhs(modelfunction)), col = "#2fa42d",main=paste0("Interaction Plot of ", colnames(df_cat)[i], " and ", colnames(df_cat)[j]))
-      cat("\n \\newline \n ", fill=TRUE)
+}, error=function(e) {
+  cat("Error: This plot cannot be generated. ")
+  }
+)
+```
+
+```{r descplots4, dev="cairo_pdf", eval=eval, results='asis'}
+tryCatch({
+  
+  cat("\n \\pagebreak \n",fill=TRUE)
+  # Interaction Plot
+  if(ncol(df_cat)>=2){
+    cat("## Interaction Plot for Factors \n", fill=TRUE)
+    cat("\n Note: The more parallel the lines, the less likely is the significance of the interaction of the factors. \n", fill=TRUE)
+    for (i in 1:(ncol(df_cat)-1)) {
+      for (j in (i+1):ncol(df_cat)) {
+        interaction.plot(df_cat[,i], df_cat[,j], x, xlab= colnames(df_cat)[i], trace.label = colnames(df_cat)[j], ylab=paste("mean of", lhs(modelfunction)), col = "#2fa42d",main=paste0("Interaction Plot of ", colnames(df_cat)[i], " and ", colnames(df_cat)[j]))
+        cat("\n \\newline \n ", fill=TRUE)
+      }
     }
   }
-}
+  
+}, error=function(e) {
+  cat("Error: This plot cannot be generated. ")
+  }
+)
 ```
 
 
@@ -343,27 +380,29 @@ tryCatch({
   eval_model <- TRUE
   
 }, error=function(e) {
-  
-  e
-  cat("Error: The factor of interest cannot be releveled. Execution stopped. ")
-  
-}
+  cat("Error: Model cannot be fit. There is a problem with the model function or with the data. Execution stopped. ")
+  }
 )
 ```
 
-```{r fitmodel, eval = eval_model}
+```{r effectcoding, eval = eval_model}
 # Set effect coding for the rest of the factors, relevant for the type III Anova table 
 for (i in 1:ncol(df_factorized)) {
   if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
 }
+```
 
+
+```{r fitmodel, eval = eval_model}
 # Fit Linear Model
+
 tryCatch({
+  
   modelfunction <- modelsplit[1]
   lmfit <- lm(modelfunction, data = df_factorized)
   
   ## Initialize next computations
-  eval_model <- TRUE
+  eval_model2 <- TRUE
   
 }, error=function(e) {
   
@@ -373,58 +412,74 @@ tryCatch({
 )
 ```
 
-```{r Parametertable, dev="cairo_pdf", eval = eval_model, results='asis'}
-# Table Parameter estimates
-cat("\n \\pagebreak \n",fill=TRUE)
-cat("\n# Analysis of Variance  \n", fill=TRUE)
+```{r Parametertable, dev="cairo_pdf", eval = eval_model2, results='asis'}
 
-coef.lmfit <- as.data.frame(summary(lmfit)$coefficients)
-coef.lmfit1 <- data.frame("Variable"=rownames(coef.lmfit),"Value"=coef.lmfit$Estimate, 
+tryCatch({
 
-                          "Std.Error"=coef.lmfit$'Std. Error',"T.value"=coef.lmfit$'t value',
-                          "P.value"=coef.lmfit$'Pr(>|t|)')
-coef.lmfit1$'P.value' <- sapply(coef.lmfit1$'P.value',pformat)
+  # Table Parameter estimates
+  cat("\n \\pagebreak \n",fill=TRUE)
+  cat("\n# Analysis of Variance  \n", fill=TRUE)
+  
+  coef.lmfit <- as.data.frame(summary(lmfit)$coefficients)
+  coef.lmfit1 <- data.frame("Variable"=rownames(coef.lmfit),"Value"=coef.lmfit$Estimate, 
+  
+                            "Std.Error"=coef.lmfit$'Std. Error',"T.value"=coef.lmfit$'t value',
+                            "P.value"=coef.lmfit$'Pr(>|t|)')
+  coef.lmfit1$'P.value' <- sapply(coef.lmfit1$'P.value',pformat)
+  
+  
+  # column significance levels
+  coef.lmfit1$'sign. level' <- NA
+  coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') <= 0.001)] <- "***"
+  coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.001)] <- "**"
+  coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.01)] <- "*"
+  coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.05)] <- "."
+  coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.1)] <- " "
+  
+  coef.lmfit1$'sign. level'[which(is.na(coef.lmfit1$'P.value'))] <- "-"
+  
+  
+  names(coef.lmfit1)[6] <- paste0(names(coef.lmfit1)[6], footnote_marker_number(1, "latex"))
+  # column declaration of significance
+  coef.lmfit1$sig <- NA  
+  for (i in 2:nrow(coef.lmfit1)) {
+    if(coef.lmfit1[i,]$'P.value' <= 0.05){
+      if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
+        coef.lmfit1[i,]$sig <- paste0("Interaction Significant. Effect ",sub(":", paste0(" vs. ","reference ", "depends on "), coef.lmfit1[i,]$Variable),".")
+                                
+      }else coef.lmfit1[i,]$sig <- paste0("Significant. A Difference between the effect of ", 
+                                          coef.lmfit1[i,]$Variable, " and its reference.")
+    }else{ 
+      if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
+        coef.lmfit1[i,]$sig <- paste0("Interaction not Significant. Effect ",sub(":", paste0(" vs. ","reference ", "don't depends on "), coef.lmfit1[i,]$Variable),".")
+      }else coef.lmfit1[i,]$sig <- paste0("Not Significant. No difference between the effect of ",coef.lmfit1[i,]$Variable, " and its reference.")}
+       
+  }
+   
+  
+  
+  if(coef.lmfit1[1,]$'P.value' <= 0.05){
+  
+      coef.lmfit1[1,]$sig <- "Intercept Significant."
+  }else {coef.lmfit1[1,]$sig <- "Intercept not Significant."}
+  # footnote significance codes
+  names(coef.lmfit1)[7] <- "Significance at 5 percent error"
+  fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
+  number= fn1
 
-
-# column significance levels
-coef.lmfit1$'sign. level' <- NA
-coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') <= 0.001)] <- "***"
-coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.001)] <- "**"
-coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.01)] <- "*"
-coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.05)] <- "."
-coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.1)] <- " "
-
-coef.lmfit1$'sign. level'[which(is.na(coef.lmfit1$'P.value'))] <- "-"
-
-
-names(coef.lmfit1)[6] <- paste0(names(coef.lmfit1)[6], footnote_marker_number(1, "latex"))
-# column declaration of significance
-coef.lmfit1$sig <- NA  
-for (i in 2:nrow(coef.lmfit1)) {
-  if(coef.lmfit1[i,]$'P.value' <= 0.05){
-    if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
-      coef.lmfit1[i,]$sig <- paste0("Interaction Significant. Effect ",sub(":", paste0(" vs. ","reference ", "depends on "), coef.lmfit1[i,]$Variable),".")
-                              
-    }else coef.lmfit1[i,]$sig <- paste0("Significant. A Difference between the effect of ", 
-                                        coef.lmfit1[i,]$Variable, " and its reference.")
-  }else{ 
-    if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
-      coef.lmfit1[i,]$sig <- paste0("Interaction not Significant. Effect ",sub(":", paste0(" vs. ","reference ", "don't depends on "), coef.lmfit1[i,]$Variable),".")
-    }else coef.lmfit1[i,]$sig <- paste0("Not Significant. No difference between the effect of ",coef.lmfit1[i,]$Variable, " and its reference.")}
-     
+  ## Initialize next computations
+  eval_model3 <- TRUE
+  
+}, error=function(e) {
+  
+  stop(safeError("Error: The model function could not be fitted to the data. "))
+  
 }
- 
+)
+```
 
-
-if(coef.lmfit1[1,]$'P.value' <= 0.05){
-
-    coef.lmfit1[1,]$sig <- "Intercept Significant."
-}else {coef.lmfit1[1,]$sig <- "Intercept not Significant."}
-# footnote significance codes
-names(coef.lmfit1)[7] <- "Significance at 5 percent error"
-fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
-number= fn1
-# create table
+```{r Parametertable2, dev="cairo_pdf", eval = eval_model3, results='asis'}  
+# Output Table
 cat("## Detailed Influence of Factors (Linear Model Parameter Estimates) \n", fill=TRUE)
 opts <- options(knitr.kable.NA = "")
 x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
@@ -433,7 +488,7 @@ footnote(x, number = number) %>%
 ```
 
 
-```{r type3, dev="cairo_pdf", eval=eval_model, results='asis'}
+```{r type3, dev="cairo_pdf", eval=eval_model3, results='asis'}
 # Type III tests 
 a = Anova(lmfit, type=3)
 #Create dataframe
@@ -469,7 +524,7 @@ x1 <- knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" "
 kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
-```{r GoodnessOfFit, dev="cairo_pdf", eval = eval_model, results='asis'}
+```{r GoodnessOfFit, dev="cairo_pdf", eval = eval_model3, results='asis'}
 sum.lmfit <- summary(lmfit)
 
 GoF <- data.frame('Values'=c('Multiple R-Squared'=sum.lmfit$r.squared,
@@ -500,20 +555,20 @@ kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HO
 
 ```
 
-```{r diagnosticplots, dev="cairo_pdf", eval=eval_model, results="asis"}
+```{r diagnosticplots, dev="cairo_pdf", eval=eval_model3, results="asis"}
 cat("# Diagnostics", fill=TRUE) 
 cat("## Diagnostic Plots ", fill=TRUE) 
 layout(matrix(c(1,2,3,4),2,2)) 
 plot(lmfit) 
 ```
 
-```{r def_control_homog, eval = eval_model}
+```{r def_control_homog, eval = eval_model3}
 # Define execution especially for a one-way model 
-oneway <- as.logical(eval_model*(length(df_cat_factor)==1L))
+oneway <- as.logical(eval_model3*(length(df_cat_factor)==1L))
 ```
 
 
-```{r titlevariances, dev="cairo_pdf", eval = eval_model,  results="asis"}
+```{r titlevariances, dev="cairo_pdf", eval = eval_model3,  results="asis"}
 cat("\\pagebreak ", fill=TRUE)
 # Homogeneity of Variances
 cat("##  Homogeneity of Variances", fill=TRUE)
@@ -553,11 +608,11 @@ cat("Interpretation: The response variable is denoted by y. The fist of the thre
 cat("\\pagebreak")
 ``` 
  
-```{r levene, eval = eval_model, results="asis"}
+```{r levene, eval = eval_model3, results="asis"}
 cat("### Levene Test of Homogeneity of Variances ", fill=TRUE)
 ```
 
-```{r levene2, eval = eval_model}
+```{r levene2, eval = eval_model3}
 tryCatch({
   
   leveneobj <- leveneTest(as.formula(modelfunction), data = df_factorized)
@@ -584,7 +639,7 @@ if (leveneobj$`Pr(>F)`[1] <= alphahomog) {
 
 \pagebreak
 
-```{r Dunnet, eval=eval_model, results='asis', dev="cairo_pdf"}
+```{r Dunnet, eval=eval_model3, results='asis', dev="cairo_pdf"}
 cat("\n# Multiple Comparisons of Means to a Control \n", fill=TRUE)
 #cat("\\small ", fill=TRUE)
 cat("Theoretical background: Testing multiple hypotheses simultaneously and each at the same pre-specified significance level, increases the probability of false positive effects. The probability to commit at least one false positive decision increases with the number of hypotheses. A solution to overcome this problem is given by multiple comparisons procedures. Here, we do not control the per-hypothesis Type I error but the probability of committing at least one Type I error over all hypotheses. Using p-values adjusted for multiplicity, individual hypotheses can be finally compared with the pre-specified significance level.",fill=TRUE)
@@ -691,7 +746,7 @@ for (i in 1:nrow(conf_glht)) {
     conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
 }
 
-fn4 <- "Remark: Zero is not in the conidence interval."
+fn4 <- "Remark: Zero is not in the confidence interval."
 fn5 <- "Remark: Zero is in the confidence interval."
 number_2= c(fn4, fn5)
 
@@ -708,7 +763,7 @@ footnote(x, number = number_2) %>%
 
 \pagebreak
 
-```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval_model, results = "asis"}
+```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval_model3, results = "asis"}
 # MCPs with a control Dunnet step-down 
 cat("## Dunnet Step-Down \n", fill=TRUE)
 mylist <- list()
@@ -765,7 +820,7 @@ for (i in 1:nrow(conf_glht)) {
   }else{ 
     conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
 }
-fn4 <- "Remark: Zero is not in the conidence interval."
+fn4 <- "Remark: Zero is not in the confidence interval."
 fn5 <- "Remark: Zero is in the confidence interval."
 number_2= c(fn4, fn5)
 colnames(conf_glht)[4] <- "Interpretation"
@@ -778,7 +833,7 @@ footnote(x, number = number_2) %>%
 
 \pagebreak 
 
-```{r dunnet_sandwich, dev = "cairo_pdf", eval = eval_model, results = "asis"}
+```{r dunnet_sandwich, dev = "cairo_pdf", eval = eval_model3, results = "asis"}
 # MCPs with a control Dunnet Sandwich
 
 key <- modelsplit[2] 
@@ -865,7 +920,7 @@ for (i in 1:nrow(sandw.ki.df)) {
   }else{ 
     sandw.ki.df[i,]$sig <- paste0("The interval (", round(sandw.ki.df$'Lower bound'[i],2), ", ", round(sandw.ki.df$'Upper bound'[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
 }
-fn4 <- "Remark: Zero is not in the conidence interval."
+fn4 <- "Remark: Zero is not in the confidence interval."
 fn5 <- "Remark: Zero is in the confidence interval."
 number_2= c(fn4, fn5)
 colnames(sandw.ki.df)[4] <- "Interpretation"
@@ -878,14 +933,14 @@ cat(paste0("Simultaneous Confidence Intervals which includes the true value of t
 x2 <- knitr::kable(sandw.ki.df , digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 footnote(x2, number = number_2) %>% 
   kable_styling(x2, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header")) 
-#plot(output_sandwich, main = "KI Sandwich", xlab = "x1")  # ylim = c(min(df$x1), max(df$x1)),
+
 ```
 
 
 \pagebreak 
 
 
-```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval_model, results='asis'}
+```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval_model3, results='asis'}
 cat("\n## Dunnet Step-Down Sandwich \n", fill=TRUE)
 # MCPs with a control Dunnet step-down, Sandwich
 ## Construct input to mcp2 function which is an update of the original mcp function 

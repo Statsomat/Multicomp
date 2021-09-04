@@ -76,6 +76,13 @@ shinyUI(fluidPage(
      color: #fff; text-align: center;
      background-color: #2fa42d;
      padding: 5px;
+     margin-top: 0px;
+     margin-bottom: 0px;"),
+  h5("Experimental Beta Modus", 
+     style = "font-family: 'Helvetica';
+     color: #fff; text-align: center;
+     background-color: #EA7A0A;
+     padding: 5px;
      margin-top: 0px;"),
   
   br(),
@@ -166,9 +173,6 @@ shinyUI(fluidPage(
            wellPanel(style = "background: #ff9900", align="center", 
                      
                      h3("Click to Generate Results"),
-                     
-                     radioButtons('rcode', '', c('Data Analysis Report (PDF)', 'R Code'), inline = TRUE),
-                     
                      
                      actionButton("generate", "", style="
                                     height:145px;

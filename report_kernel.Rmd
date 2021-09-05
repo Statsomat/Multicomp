@@ -385,13 +385,6 @@ tryCatch({
 )
 ```
 
-```{r effectcoding, eval = eval_model}
-# Set effect coding for the rest of the factors, relevant for the type III Anova table 
-for (i in 1:ncol(df_factorized)) {
-  if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
-}
-```
-
 
 ```{r fitmodel, eval = eval_model}
 # Fit Linear Model
@@ -425,7 +418,6 @@ tryCatch({
   
                             "Std.Error"=coef.lmfit$'Std. Error',"T.value"=coef.lmfit$'t value',
                             "P.value"=coef.lmfit$'Pr(>|t|)')
-  # coef.lmfit1$'P.value' <- sapply(coef.lmfit1$'P.value',pformat)
   
   # column significance levels
   coef.lmfit1$'sign. level' <- NA
@@ -447,12 +439,12 @@ tryCatch({
       if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
         coef.lmfit1[i,]$sig <- paste0("Interaction significant. Effect ",sub(":", paste0(" vs. ","reference ", "depends on "), coef.lmfit1[i,]$Variable),".")
                                 
-      }else coef.lmfit1[i,]$sig <- paste0("Significant. A Difference between the effect of ", 
-                                          coef.lmfit1[i,]$Variable, " and its reference.")
+      }else coef.lmfit1[i,]$sig <- paste0("Significant difference between ", 
+                                          coef.lmfit1[i,]$Variable, " and the reference.")
     }else{ 
       if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
         coef.lmfit1[i,]$sig <- paste0("Interaction not significant. Effect ",sub(":", paste0(" vs. ","reference ", "doesn't depend on "), coef.lmfit1[i,]$Variable),".")
-      }else coef.lmfit1[i,]$sig <- paste0("Not significant. No difference between the effect of ",coef.lmfit1[i,]$Variable, " and its reference.")}
+      }else coef.lmfit1[i,]$sig <- paste0("No significant difference between ",coef.lmfit1[i,]$Variable, " and the reference.")}
        
   }
    
@@ -461,6 +453,9 @@ tryCatch({
   if(pvalue <= 0.05){
     coef.lmfit1[1,]$sig <- "Intercept statistically significant."
   } else {coef.lmfit1[1,]$sig <- "Intercept not statistically significant."}
+  
+  # Set format to pvalue column 
+  coef.lmfit1$'P.value' <- sapply(coef.lmfit1$'P.value',pformat)
 
   # footnote significance codes
   names(coef.lmfit1)[7] <- "Significance at 5 percent error"
@@ -481,12 +476,19 @@ tryCatch({
 ```{r Parametertable2, dev="cairo_pdf", eval = eval_model3, results='asis'}  
 # Output Table
 cat("## Detailed Influence of Factors (Linear Model Parameter Estimates) \n", fill=TRUE)
+cat("Note: No adjustement for multiplicity.", fill=TRUE)
 opts <- options(knitr.kable.NA = "")
 x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 footnote(x, number = number) %>%
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
+```{r effectcoding, eval = eval_model}
+# Set effect coding for the rest of the factors, relevant for the type III Anova table 
+for (i in 1:ncol(df_factorized)) {
+  if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
+}
+```
 
 ```{r type3, dev="cairo_pdf", eval=eval_model3, results='asis'}
 # Type III tests 

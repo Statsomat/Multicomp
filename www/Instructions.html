@@ -1,3 +1,12 @@
 <div>
 <h3>Instructions</h3>
+<p>Before uploading, the data must be prepared in the following way: Each row represents a record respectively an observation. Each column represents a variable respectively a parameter of interest. Do not store multiple variables in one column (for example sex and age in one column). Use distinct names for the columns. Do not use special characters in the columns names e.g. underscores. Only blanks (empty cells) indicate missing values. Other character values (e.g. "NA" or "9") are not recognized as missing values. Once you have your data prepared in the specified way, save it with the CSV format. If your data file is in an Excel or LibreOffice format, you can try to convert it to CSV by selecting "Save As". Try to select the format CSV with the character encoding UTF-8, this helps reading the data correctly. You can also prepare or inspect the CSV file with a text editor like 
+<a target="_blank" rel="noopener noreferrer" href="https://notepad-plus-plus.org/"><b>Notepad++</b></a>.</p> 
+<p>When your data is ready, you can proceed with the upload. A couple of upload properties must be specified. If you are not sure about them, you can choose the option "Auto" for each property. In this case, the
+Statsomat app will try to identify automatically the right settings. In most of the cases, this will succeed. Otherwise, please consider alternative settings or data formats.</p> 
+<p>Select the option "Severe" for the Continuity if a variable should be declared and treated as continuous based on an automatic algorithm or select "Relaxed" to declare and treat a variable as continuous if it has less than seven distinct values (missings omitted).</p>
+<p>After a successful upload of the data, you can proceed with the formula for the linear model. Type the formula in classical R notation in the text area. Do not use functions within the formula. An example is displayed which you can easily overwrite.</p>
+<p>Next, select only one variable (factor) of interest and set the desired reference value (the control).</p>
+<p>Next, select the test alternative to apply to the comparisons with the reference value.</p>
+<p>Now you can generate and finally download the report. To make use of the table of contents, open the report with a PDF reader (for example Adobe Acrobat Reader). </p>   
 </div>

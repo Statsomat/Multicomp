@@ -12,11 +12,11 @@ library(multcomp) # mcp
 library(sandwich) # sandwich
 library(car) # type III Anova tests, levene
 library(psych) # multi.hist
-library(formula.tools) #for formula lhs
+library(formula.tools) # for formula lhs
 library(PerformanceAnalytics) # Scatterplot
 library(rlang) # as_string for cast
 library(stringr) # for strings
-library(tibble) #for rownames to columns
+library(tibble) # for rownames to columns
 library(HH) # hovplot 
 library(onewaytests) #bf test
 ```
@@ -217,13 +217,13 @@ cat("\\newline",fill=TRUE)
 cat("You are interested in the factor:", fill=TRUE)
 cat(modelsplit[2])
 cat("\\newline",fill=TRUE)
-cat("You are interested in pairwise comparisons to the reference level:", fill=TRUE)
+cat("You are interested in pairwise comparisons to the reference level (control):", fill=TRUE)
 cat(modelsplit[3])
 ```
 
 
 ```{r factoring, eval=eval}
-# Generate dataframe with factorized categorical variables 
+# Factorize categorical variables 
 df_cat_factor <- lapply(df_cat, as.factor)
 df_factorized <- cbind(df_cont, df_cat_factor)  
 ```
@@ -247,10 +247,10 @@ if (nrow(as.data.frame(df_factorized[complete.cases(df_factorized),])) < 15){
   eval <- FALSE
 }
 
-# Restrict to complete cases 
+# Restrict df to complete cases 
 if (length(which(complete_rate < 1)) != 0L){
   df_factorized <- as.data.frame(df_factorized[complete.cases(df_factorized),])
-  cat("Warning: There are missing values in the dataset. We will consider in what follows only the complete cases. ", fill=TRUE)
+  cat("Warning: There are missing values in the dataset. We will consider in what follows the analysis based only on the complete cases. ", fill=TRUE)
   }
 ```
 
@@ -406,7 +406,7 @@ tryCatch({
   
 }, error=function(e) {
   
-  stop(safeError("Error: The model function could not be fitted to the data. "))
+  stop(safeError("The model function could not be fitted to the data. "))
   
 }
 )
@@ -425,8 +425,7 @@ tryCatch({
   
                             "Std.Error"=coef.lmfit$'Std. Error',"T.value"=coef.lmfit$'t value',
                             "P.value"=coef.lmfit$'Pr(>|t|)')
-  coef.lmfit1$'P.value' <- sapply(coef.lmfit1$'P.value',pformat)
-  
+  # coef.lmfit1$'P.value' <- sapply(coef.lmfit1$'P.value',pformat)
   
   # column significance levels
   coef.lmfit1$'sign. level' <- NA
@@ -435,33 +434,34 @@ tryCatch({
   coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.01)] <- "*"
   coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.05)] <- "."
   coef.lmfit1$'sign. level'[which(abs(coef.lmfit$'Pr(>|t|)') > 0.1)] <- " "
-  
   coef.lmfit1$'sign. level'[which(is.na(coef.lmfit1$'P.value'))] <- "-"
   
-  
   names(coef.lmfit1)[6] <- paste0(names(coef.lmfit1)[6], footnote_marker_number(1, "latex"))
+ 
+  
   # column declaration of significance
   coef.lmfit1$sig <- NA  
   for (i in 2:nrow(coef.lmfit1)) {
-    if(coef.lmfit1[i,]$'P.value' <= 0.05){
+    pvalue <- round(as.numeric(coef.lmfit1[i,]$'P.value'),3)
+    if(pvalue <= 0.05){
       if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
-        coef.lmfit1[i,]$sig <- paste0("Interaction Significant. Effect ",sub(":", paste0(" vs. ","reference ", "depends on "), coef.lmfit1[i,]$Variable),".")
+        coef.lmfit1[i,]$sig <- paste0("Interaction significant. Effect ",sub(":", paste0(" vs. ","reference ", "depends on "), coef.lmfit1[i,]$Variable),".")
                                 
       }else coef.lmfit1[i,]$sig <- paste0("Significant. A Difference between the effect of ", 
                                           coef.lmfit1[i,]$Variable, " and its reference.")
     }else{ 
       if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
-        coef.lmfit1[i,]$sig <- paste0("Interaction not Significant. Effect ",sub(":", paste0(" vs. ","reference ", "don't depends on "), coef.lmfit1[i,]$Variable),".")
-      }else coef.lmfit1[i,]$sig <- paste0("Not Significant. No difference between the effect of ",coef.lmfit1[i,]$Variable, " and its reference.")}
+        coef.lmfit1[i,]$sig <- paste0("Interaction not significant. Effect ",sub(":", paste0(" vs. ","reference ", "doesn't depend on "), coef.lmfit1[i,]$Variable),".")
+      }else coef.lmfit1[i,]$sig <- paste0("Not significant. No difference between the effect of ",coef.lmfit1[i,]$Variable, " and its reference.")}
        
   }
    
   
-  
-  if(coef.lmfit1[1,]$'P.value' <= 0.05){
-  
-      coef.lmfit1[1,]$sig <- "Intercept Significant."
-  }else {coef.lmfit1[1,]$sig <- "Intercept not Significant."}
+  pvalue <- round(as.numeric(coef.lmfit1[1,]$'P.value'),3)
+  if(pvalue <= 0.05){
+    coef.lmfit1[1,]$sig <- "Intercept statistically significant."
+  } else {coef.lmfit1[1,]$sig <- "Intercept not statistically significant."}
+
   # footnote significance codes
   names(coef.lmfit1)[7] <- "Significance at 5 percent error"
   fn1 <- "'***': sign. to 0.1% error. '**': sign. to 1% error. '*': sign. to 5% error. ' . ': sign. to 10% error. '     ': not sign. ' - ': no statement."
@@ -472,7 +472,7 @@ tryCatch({
   
 }, error=function(e) {
   
-  stop(safeError("Error: The model function could not be fitted to the data. "))
+  stop(safeError("The model function could not be fitted to the data. "))
   
 }
 )
@@ -493,29 +493,32 @@ footnote(x, number = number) %>%
 a = Anova(lmfit, type=3)
 #Create dataframe
 df_table <- data.frame("Variable"=rownames(a),"Sum.Sq"=a$`Sum Sq`,"Df"=a$Df,"F.value"=a$`F value`,"P.value"=a$'Pr(>F)')
-#format p-value column to p-value
-df_table$P.value <- sapply(df_table$P.value,pformat)
 #add a new column Interpretation
 df_table$'Interpretation (5% error)' <- NA
 #label intercept line
-if(df_table[1,'P.value']<0.05){
-  df_table[1,'Interpretation (5% error)']='Intercept significantly different from zero.'
-}else{df_table[1,'Interpretation (5% error)']='Intercept not significantly different from zero.'}
+if(df_table[1,'P.value']<=0.05){
+  df_table[1,'Interpretation (5% error)']='Intercept statistically significantly different from zero.'
+}else{df_table[1,'Interpretation (5% error)']='Intercept not statistically significantly different from zero.'}
 
 #make entries dependent on p-value
 for(i in 2:nrow(df_table)){
-  ifelse(df_table[i,'P.value']<=0.05,
-         if(str_detect(rownames(df_table)[i], ":")){
-      df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", rownames(df_table)[i], "statistically significant.")
-         }else{
-         df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", rownames(df_table)[i], ".")},
-         if(str_detect(rownames(df_table)[i], ":")){
-      df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", rownames(df_table)[i], "is not statistically significant.")
-         }else{
-         df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", rownames(df_table)[i], ".")
+  pvalue <- round(as.numeric(df_table[i,'P.value']),3)
+  ifelse(pvalue<=0.05,
+         if(str_detect(df_table[i,'Variable'], ":")){
+           df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", df_table[i,'Variable'], " statistically significant.")
+         } else {
+           df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", df_table[i,'Variable'], ".")},
+         
+         if(str_detect(df_table[i,'Variable'], ":")){
+           df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", df_table[i,'Variable'], " is not statistically significant.")
+         } else {
+           df_table[i,'Interpretation (5% error)'] <- paste0("There are no significant differences between the levels of factor ", df_table[i,'Variable'], ".")
          }
       )
 }
+
+#format p-value column to p-value
+df_table$P.value <- sapply(df_table$P.value,pformat)
 
 #plot result including heading
 cat("## Total Influence of Factors (ANOVA Type III) \n", fill=TRUE)

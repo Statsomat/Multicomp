@@ -32,6 +32,7 @@ eval_model3 <- FALSE
 eval_model4 <- FALSE
 eval_rows <- FALSE
 oneway <- FALSE
+bfplot <- FALSE 
 homogtest <- FALSE
 evallevene <- FALSE
 
@@ -612,8 +613,8 @@ cat("###  Brown and Forsyth Test of Homogeneity of Variances", fill=TRUE)
 
 ```{r bftest2, dev="cairo_pdf", eval = oneway}
 tryCatch({
-  hov(as.formula(modelfunction), data = df_factorized)
   
+  hov(as.formula(modelfunction), data = df_factorized)
   bf <- hov(as.formula(modelfunction), data = df_factorized)
   
   if (bf$p.value <= alphahomog) {
@@ -623,10 +624,12 @@ tryCatch({
      homogtest <- TRUE
   }
 
+   bfplot <- TRUE 
+   
 }, error = function(e) {cat("Error: The Brown and Forsyth Test of Homogeneity of Variances cannot be executed. ")})
 ```
 
-```{r hovplot, dev="cairo_pdf", eval=oneway, results="asis", fig.width=8, fig.cap="Homogeneity of Variance Plot"}
+```{r hovplot, dev="cairo_pdf", eval = bfplot, results="asis", fig.width=8, fig.cap="Homogeneity of Variance Plot"}
 # Brown and Forsythe Plot
 cat("### Brown and Forsyth Plot", fill=TRUE)
 

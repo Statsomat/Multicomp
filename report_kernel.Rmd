@@ -29,6 +29,7 @@ eval <- FALSE
 eval_model <- FALSE
 eval_model2 <- FALSE
 eval_model3 <- FALSE
+eval_model4 <- FALSE
 eval_rows <- FALSE
 oneway <- FALSE
 homogtest <- FALSE
@@ -437,14 +438,14 @@ tryCatch({
     pvalue <- round(as.numeric(coef.lmfit1[i,]$'P.value'),3)
     if(pvalue <= 0.05){
       if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
-        coef.lmfit1[i,]$sig <- paste0("Interaction significant. Effect ",sub(":", paste0(" vs. ","reference ", "depends on "), coef.lmfit1[i,]$Variable),".")
+        coef.lmfit1[i,]$sig <- paste0("Interaction effect if levels ", sub(":", paste0(" and "), coef.lmfit1[i,]$Variable)," are present is significant. ")
                                 
       }else coef.lmfit1[i,]$sig <- paste0("Significant difference between ", 
-                                          coef.lmfit1[i,]$Variable, " and the reference.")
+                                          coef.lmfit1[i,]$Variable, " and the reference of this factor. ")
     }else{ 
       if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
-        coef.lmfit1[i,]$sig <- paste0("Interaction not significant. Effect ",sub(":", paste0(" vs. ","reference ", "doesn't depend on "), coef.lmfit1[i,]$Variable),".")
-      }else coef.lmfit1[i,]$sig <- paste0("No significant difference between ",coef.lmfit1[i,]$Variable, " and the reference.")}
+        coef.lmfit1[i,]$sig <- paste0("Interaction effect if levels ",sub(":", paste0(" and "), coef.lmfit1[i,]$Variable)," are present is not significant. ")
+      }else coef.lmfit1[i,]$sig <- paste0("No significant difference between ",coef.lmfit1[i,]$Variable, " and the reference of this factor.")}
        
   }
    
@@ -475,7 +476,7 @@ tryCatch({
 
 ```{r Parametertable2, dev="cairo_pdf", eval = eval_model3, results='asis'}  
 # Output Table
-cat("## Detailed Influence of Factors (Linear Model Parameter Estimates) \n", fill=TRUE)
+cat("## Detailed Influence of Predictors (Linear Model Parameter Estimates) \n", fill=TRUE)
 cat("Note: No adjustement for multiplicity.", fill=TRUE)
 opts <- options(knitr.kable.NA = "")
 x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
@@ -483,7 +484,7 @@ footnote(x, number = number) %>%
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
-```{r effectcoding, eval = eval_model}
+```{r effectcoding, eval = eval_model3}
 # Set effect coding for the rest of the factors, relevant for the type III Anova table 
 for (i in 1:ncol(df_factorized)) {
   if (is.factor(df_factorized[,i])==T) contrasts(df_factorized[,i]) <- contr.sum
@@ -492,44 +493,59 @@ for (i in 1:ncol(df_factorized)) {
 
 ```{r type3, dev="cairo_pdf", eval=eval_model3, results='asis'}
 # Type III tests 
-a = Anova(lmfit, type=3)
-#Create dataframe
-df_table <- data.frame("Variable"=rownames(a),"Sum.Sq"=a$`Sum Sq`,"Df"=a$Df,"F.value"=a$`F value`,"P.value"=a$'Pr(>F)')
-#add a new column Interpretation
-df_table$'Interpretation (5% error)' <- NA
-#label intercept line
-if(df_table[1,'P.value']<=0.05){
-  df_table[1,'Interpretation (5% error)']='Intercept statistically significantly different from zero.'
-}else{df_table[1,'Interpretation (5% error)']='Intercept not statistically significantly different from zero.'}
+tryCatch({
 
-#make entries dependent on p-value
-for(i in 2:nrow(df_table)){
-  pvalue <- round(as.numeric(df_table[i,'P.value']),3)
-  ifelse(pvalue<=0.05,
-         if(str_detect(df_table[i,'Variable'], ":")){
-           df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", df_table[i,'Variable'], " statistically significant.")
-         } else {
-           df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", df_table[i,'Variable'], ".")},
-         
-         if(str_detect(df_table[i,'Variable'], ":")){
-           df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", df_table[i,'Variable'], " is not statistically significant.")
-         } else {
-           df_table[i,'Interpretation (5% error)'] <- paste0("There are no significant differences between the levels of factor ", df_table[i,'Variable'], ".")
-         }
-      )
-}
+  a = Anova(lmfit, type=3)
+  #Create dataframe
+  df_table <- data.frame("Variable"=rownames(a),"Sum.Sq"=a$`Sum Sq`,"Df"=a$Df,"F.value"=a$`F value`,"P.value"=a$'Pr(>F)')
+  #add a new column Interpretation
+  df_table$'Interpretation (5% error)' <- NA
+  #label intercept line
+  if(df_table[1,'P.value']<=0.05){
+    df_table[1,'Interpretation (5% error)']='Intercept statistically significantly different from zero.'
+  }else{df_table[1,'Interpretation (5% error)']='Intercept not statistically significantly different from zero.'}
+  
+  #make entries dependent on p-value
+  for(i in 2:nrow(df_table)){
+    pvalue <- round(as.numeric(df_table[i,'P.value']),3)
+    ifelse(pvalue<=0.05,
+           if(str_detect(df_table[i,'Variable'], ":")){
+             df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", df_table[i,'Variable'], " statistically significant. Effect of one involved factor depends on the other factor. ")
+           } else {
+             df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", df_table[i,'Variable'], ".")},
+           
+           if(str_detect(df_table[i,'Variable'], ":")){
+             df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", df_table[i,'Variable'], " is not statistically significant.")
+           } else {
+             df_table[i,'Interpretation (5% error)'] <- paste0("There are no significant differences between the levels of factor ", df_table[i,'Variable'], ".")
+           }
+        )
+  }
+  
+  #format p-value column to p-value
+  df_table$P.value <- sapply(df_table$P.value,pformat)
 
-#format p-value column to p-value
-df_table$P.value <- sapply(df_table$P.value,pformat)
 
+  eval_model4 <- TRUE 
+
+}, error=function(e) {
+  
+  stop(safeError("ANOVA Type III table cannot be created. Execution stopped. "))
+  
+})
+```
+
+
+```{r anovatypeiiitable, dev="cairo_pdf", eval = eval_model4, results='asis'}
 #plot result including heading
-cat("## Total Influence of Factors (ANOVA Type III) \n", fill=TRUE)
+cat("## Total Influence of Predictors (ANOVA Type III) \n", fill=TRUE)
 options(knitr.kable.NA = '')
 x1 <- knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
-```{r GoodnessOfFit, dev="cairo_pdf", eval = eval_model3, results='asis'}
+
+```{r GoodnessOfFit, dev="cairo_pdf", eval = eval_model4, results='asis'}
 sum.lmfit <- summary(lmfit)
 
 GoF <- data.frame('Values'=c('Multiple R-Squared'=sum.lmfit$r.squared,
@@ -537,7 +553,7 @@ GoF <- data.frame('Values'=c('Multiple R-Squared'=sum.lmfit$r.squared,
                              'F-statistic'=a$`F value`[2],'P-value'=a$`Pr(>F)`[2]))
 
 GoF$Explanation <- c("Fraction of variance explained by the model.", 
-                     "Adjusted R-Squared by penalizing higher p.", 
+                     "Adjusted R-Squared by penalizing the number of predictors.", 
                      "Overall significance of the model.", 
                      "P-value of the F-statistic.")
 
@@ -560,20 +576,20 @@ kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HO
 
 ```
 
-```{r diagnosticplots, dev="cairo_pdf", eval=eval_model3, results="asis"}
+```{r diagnosticplots, dev="cairo_pdf", eval=eval_model4, results="asis"}
 cat("# Diagnostics", fill=TRUE) 
 cat("## Diagnostic Plots ", fill=TRUE) 
 layout(matrix(c(1,2,3,4),2,2)) 
 plot(lmfit) 
 ```
 
-```{r def_control_homog, eval = eval_model3}
+```{r def_control_homog, eval = eval_model4}
 # Define execution especially for a one-way model 
-oneway <- as.logical(eval_model3*(length(df_cat_factor)==1L))
+oneway <- as.logical(eval_model4*(length(df_cat_factor)==1L))
 ```
 
 
-```{r titlevariances, dev="cairo_pdf", eval = eval_model3,  results="asis"}
+```{r titlevariances, dev="cairo_pdf", eval = eval_model4,  results="asis"}
 cat("\\pagebreak ", fill=TRUE)
 # Homogeneity of Variances
 cat("##  Homogeneity of Variances", fill=TRUE)
@@ -613,11 +629,11 @@ cat("Interpretation: The response variable is denoted by y. The fist of the thre
 cat("\\pagebreak")
 ``` 
  
-```{r levene, eval = eval_model3, results="asis"}
+```{r levene, eval = eval_model4, results="asis"}
 cat("### Levene Test of Homogeneity of Variances ", fill=TRUE)
 ```
 
-```{r levene2, eval = eval_model3}
+```{r levene2, eval = eval_model4}
 tryCatch({
   
   leveneobj <- leveneTest(as.formula(modelfunction), data = df_factorized)
@@ -644,7 +660,7 @@ if (leveneobj$`Pr(>F)`[1] <= alphahomog) {
 
 \pagebreak
 
-```{r Dunnet, eval=eval_model3, results='asis', dev="cairo_pdf"}
+```{r Dunnet, eval=eval_model4, results='asis', dev="cairo_pdf"}
 cat("\n# Multiple Comparisons of Means to a Control \n", fill=TRUE)
 #cat("\\small ", fill=TRUE)
 cat("Theoretical background: Testing multiple hypotheses simultaneously and each at the same pre-specified significance level, increases the probability of false positive effects. The probability to commit at least one false positive decision increases with the number of hypotheses. A solution to overcome this problem is given by multiple comparisons procedures. Here, we do not control the per-hypothesis Type I error but the probability of committing at least one Type I error over all hypotheses. Using p-values adjusted for multiplicity, individual hypotheses can be finally compared with the pre-specified significance level.",fill=TRUE)
@@ -768,7 +784,7 @@ footnote(x, number = number_2) %>%
 
 \pagebreak
 
-```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval_model3, results = "asis"}
+```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval_model4, results = "asis"}
 # MCPs with a control Dunnet step-down 
 cat("## Dunnet Step-Down \n", fill=TRUE)
 mylist <- list()
@@ -838,7 +854,7 @@ footnote(x, number = number_2) %>%
 
 \pagebreak 
 
-```{r dunnet_sandwich, dev = "cairo_pdf", eval = eval_model3, results = "asis"}
+```{r dunnet_sandwich, dev = "cairo_pdf", eval = eval_model4, results = "asis"}
 # MCPs with a control Dunnet Sandwich
 
 key <- modelsplit[2] 
@@ -945,7 +961,7 @@ footnote(x2, number = number_2) %>%
 \pagebreak 
 
 
-```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval_model3, results='asis'}
+```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval_model4, results='asis'}
 cat("\n## Dunnet Step-Down Sandwich \n", fill=TRUE)
 # MCPs with a control Dunnet step-down, Sandwich
 ## Construct input to mcp2 function which is an update of the original mcp function 

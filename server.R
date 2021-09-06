@@ -39,11 +39,11 @@ function(input, output, session) {
     
     if (input$fencoding == "unknown"){
       
-      validate(need(try(datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=".", encoding = "unknown", 
+      validate(need(try(datainput1 <- fread(input$file$datapath, header = TRUE, sep="auto", dec=".", encoding = "unknown", 
                                             data.table = FALSE, na.strings = "")),
                     "Error. File cannot be read. Please check that the file is not empty, fully whitespace, or skip has been set after the last non-whitespace."))
       
-      validate(need(tryCatch(datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=".", encoding = "unknown", 
+      validate(need(tryCatch(datainput1 <- fread(input$file$datapath, header = TRUE, sep="auto", dec=".", encoding = "unknown", 
                                            data.table = FALSE, na.strings = ""), warning=function(w) {}),
                     "Error. The file cannot be read unambigously. Check the characters for the field separator, quote or decimal. Remove blank lines. "
                     ))
@@ -65,11 +65,11 @@ function(input, output, session) {
              "Error. The file is probably not UTF-8 encoded. Please convert to UTF-8 or try the automatic encoding option.")
       )
      
-      validate(need(try(datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=".", encoding = "UTF-8", 
+      validate(need(try(datainput1 <- fread(input$file$datapath, header = TRUE, sep="auto", dec=".", encoding = "UTF-8", 
                                   data.table = FALSE, na.strings = "")), "Error. File cannot be read. Please check that the file is not empty, fully whitespace, or skip has been set after the last non-whitespace."))
       
       
-      validate(need(tryCatch(datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=".", encoding = "unknown", 
+      validate(need(tryCatch(datainput1 <- fread(input$file$datapath, header = TRUE, sep="auto", dec=".", encoding = "unknown", 
                                                  data.table = FALSE, na.strings = ""), warning=function(w) {}),
                     "Error. The file cannot be read unambigously. Check the characters for the field separator, quote or decimal. Remove blank lines. "
       ))
@@ -91,20 +91,20 @@ function(input, output, session) {
       
       if (input$fencoding == "UTF-8" & input$decimal == "auto"){ 
         
-        datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=".", encoding = "UTF-8", data.table = FALSE, na.strings = "")
+        datainput1 <- fread(input$file$datapath, header = TRUE, sep="auto", dec=".", encoding = "UTF-8", data.table = FALSE, na.strings = "")
         
         # Probably comma as decimal
         colnames <- sapply(datainput1, function(col) is.numeric(col) & Negate(is.integer)(col))
         if (sum(colnames) == 0L){
           
-          datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=",", encoding = "UTF-8", data.table = FALSE, na.strings = "")
+          datainput1 <- fread(input$file$datapath, header = TRUE, sep="auto", dec=",", encoding = "UTF-8", data.table = FALSE, na.strings = "")
           datainput1
           
         } else {datainput1}
         
       } else if (input$fencoding == "UTF-8" & input$decimal != "auto") {
         
-        datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=input$decimal, encoding = "UTF-8", data.table = FALSE, na.strings = "")
+        datainput1 <- fread(input$file$datapath, header = TRUE, sep="auto", dec=input$decimal, encoding = "UTF-8", data.table = FALSE, na.strings = "")
         datainput1
         
         
@@ -112,13 +112,13 @@ function(input, output, session) {
         
         enc_guessed <- guess_encoding(input$file$datapath)
         enc_guessed_first <- enc_guessed[[1]][1]
-        datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=".", encoding = "unknown", data.table = FALSE, na.strings = "")
+        datainput1 <- fread(input$file$datapath, header = TRUE, sep="auto", dec=".", encoding = "unknown", data.table = FALSE, na.strings = "")
         
         # Probably comma as decimal
         colnames <- sapply(datainput1, function(col) is.numeric(col) & Negate(is.integer)(col))
         if (sum(colnames) == 0L){
           
-          datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=",", encoding = "unknown", data.table = FALSE, na.strings = "")
+          datainput1 <- fread(input$file$datapath, header = TRUE, sep="auto", dec=",", encoding = "unknown", data.table = FALSE, na.strings = "")
           colnames(datainput1) <- iconv(colnames(datainput1), enc_guessed_first, "UTF-8")
           col_names <- sapply(datainput1, is.character)
           datainput1[ ,col_names] <- sapply(datainput1[, col_names], function(col) iconv(col, enc_guessed_first, "UTF-8"))
@@ -135,7 +135,7 @@ function(input, output, session) {
         
         enc_guessed <- guess_encoding(input$file$datapath)
         enc_guessed_first <- enc_guessed[[1]][1]
-        datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec = input$decimal, encoding = "unknown", data.table = FALSE, na.strings = "")
+        datainput1 <- fread(input$file$datapath, header = TRUE, sep="auto", dec = input$decimal, encoding = "unknown", data.table = FALSE, na.strings = "")
         colnames(datainput1) <- iconv(colnames(datainput1), enc_guessed_first, "UTF-8")
         col_names <- sapply(datainput1, is.character)
         datainput1[ ,col_names] <- sapply(datainput1[, col_names], function(col) iconv(col, enc_guessed_first, "UTF-8"))

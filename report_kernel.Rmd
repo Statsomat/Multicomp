@@ -513,7 +513,7 @@ tryCatch({
            if(str_detect(df_table[i,'Variable'], ":")){
              df_table[i,'Interpretation (5% error)'] <- paste0("This interaction is statistically significant. ")
            } else {
-             df_table[i,'Interpretation (5% error)'] <- paste0("The predictor ", df_table[i,'Variable'], " statistically significant. ")},
+             df_table[i,'Interpretation (5% error)'] <- paste0("The predictor ", df_table[i,'Variable'], " is statistically significant. ")},
            
            if(str_detect(df_table[i,'Variable'], ":")){
              df_table[i,'Interpretation (5% error)'] <- paste0("This interaction is not statistically significant. ")
@@ -543,7 +543,7 @@ cat("## Total Influence of Predictors (ANOVA Type III) \n", fill=TRUE)
 options(knitr.kable.NA = '')
 knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T) %>%
   kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header")) %>%
-  footnote(general = "A significant interaction means the effect of one in the interaction involved predictor depends on (the levels of) the other predictor. ")  
+  footnote(general = "If any, a significant interaction means the effect of one in the interaction involved predictor depends on (the levels of) the other predictor. ")  
   
 ```
 
@@ -611,15 +611,19 @@ cat("###  Brown and Forsyth Test of Homogeneity of Variances", fill=TRUE)
 
 
 ```{r bftest2, dev="cairo_pdf", eval = oneway}
-hov(as.formula(modelfunction), data = df_factorized)
-bf <- hov(as.formula(modelfunction), data = df_factorized)
+tryCatch({
+  hov(as.formula(modelfunction), data = df_factorized)
+  
+  bf <- hov(as.formula(modelfunction), data = df_factorized)
+  
+  if (bf$p.value <= alphahomog) {
+     cat("Warning: Group variances significantly heterogeneous at 10% error! Results from The Analysis of Variance chapter may not be valid. ", fill=TRUE)
+  } else {
+     cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)
+     homogtest <- TRUE
+  }
 
-if (bf$p.value <= alphahomog) {
-   cat("Warning: Group variances significantly heterogeneous at 10% error! The Analysis of Variance may not be valid. ", fill=TRUE)
-} else {
-   cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)
-   homogtest <- TRUE
-}
+}, error = function(e) {cat("Error: The Brown and Forsyth Test of Homogeneity of Variances cannot be executed. ")})
 ```
 
 ```{r hovplot, dev="cairo_pdf", eval=oneway, results="asis", fig.width=8, fig.cap="Homogeneity of Variance Plot"}
@@ -657,7 +661,7 @@ tryCatch({
 
 ```{r levene4, dev = "cairo_pdf", eval = evallevene, results="asis"}
 if (leveneobj$`Pr(>F)`[1] <= alphahomog) {
-   cat("Warning: Group variances significantly heterogeneous at 10% error! The Analysis of Variance may not be valid. ", fill=TRUE)
+   cat("Warning: Group variances significantly heterogeneous at 10% error! Results from the Analysis of Variance chapter may not be valid. ", fill=TRUE)
    homogtest <- FALSE
 } else {
    cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)

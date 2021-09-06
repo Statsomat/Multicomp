@@ -510,14 +510,14 @@ tryCatch({
     pvalue <- round(as.numeric(df_table[i,'P.value']),3)
     ifelse(pvalue<=0.05,
            if(str_detect(df_table[i,'Variable'], ":")){
-             df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", df_table[i,'Variable'], " statistically significant. Effect of one involved factor depends on the other factor. ")
+             df_table[i,'Interpretation (5% error)'] <- paste0("This interaction is statistically significant. ")
            } else {
-             df_table[i,'Interpretation (5% error)'] <- paste0("There exist significant differences between the levels of factor ", df_table[i,'Variable'], ".")},
+             df_table[i,'Interpretation (5% error)'] <- paste0("The predictor ", df_table[i,'Variable'], " statistically significant. ")},
            
            if(str_detect(df_table[i,'Variable'], ":")){
-             df_table[i,'Interpretation (5% error)'] <- paste0("Interaction ", df_table[i,'Variable'], " is not statistically significant.")
+             df_table[i,'Interpretation (5% error)'] <- paste0("This interaction is not statistically significant. ")
            } else {
-             df_table[i,'Interpretation (5% error)'] <- paste0("There are no significant differences between the levels of factor ", df_table[i,'Variable'], ".")
+             df_table[i,'Interpretation (5% error)'] <- paste0("The predictor ", df_table[i,'Variable'], " is not statistically significant. ")
            }
         )
   }
@@ -540,8 +540,10 @@ tryCatch({
 #plot result including heading
 cat("## Total Influence of Predictors (ANOVA Type III) \n", fill=TRUE)
 options(knitr.kable.NA = '')
-x1 <- knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
-kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T) %>%
+  kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header")) %>%
+  footnote(general = "A significant interaction means the effect of one in the interaction involved predictor depends on (the levels of) the other predictor. ")  
+  
 ```
 
 

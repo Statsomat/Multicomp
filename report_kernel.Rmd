@@ -970,7 +970,7 @@ mylist <- list()
 mylist[[key]] <- "Dunnet"
 names(mylist) <- key
 cat("\\small ", fill=TRUE)
-output_sw_sd <- glht(lmfit, linfct = mcp2(mylist), alternative = "less", vcov = sandwich)
+output_sw_sd <- glht(lmfit, linfct = mcp2(mylist), alternative = side, vcov = sandwich)
 sum_sw_sd <- summary(output_sw_sd, test = adjusted(type = "free"))
 #pretty table
 dunnet_sw_sd <- data.frame("Value"=sum_sw_sd$test$coefficients, 

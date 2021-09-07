@@ -1,6 +1,12 @@
 #####################################
 # Expected tables for a one-way model 
 #####################################
+library(data.table)
+library(multcomp)
+library(car)
+library(sandwich)
+
+
 df_factorized <- fread("Datasets/warpbreaks.csv", data.table = FALSE)
 df_factorized$tension <- as.factor(df_factorized$tension)
 df_factorized[,4] <- relevel(df_factorized[,4], ref = "L")
@@ -12,7 +18,7 @@ for (i in 1:ncol(df_factorized)) {
 }
 Anova(lmfit, type=3)
 hov(as.formula(modelfunction), data = df_factorized)
-library(multcomp)
+
 ## Dunnet
 dunnet <- glht(lmfit, linfct = mcp(tension = "Dunnett"), alternative = "two.sided")
 summary(dunnet)
@@ -23,10 +29,14 @@ confint(dunnet, level = 0.95)
 ### More powerful 
 summary(dunnet, test = adjusted(type = "free"))
 
-
 ## Dunnet Sandwich
-## Dunnet Sandwich Step-Down 
+dunnet_sandwich <- glht(lmfit, linfct = mcp(tension = "Dunnett"), alternative = "two.sided", vcov = sandwich)
+summary(dunnet_sandwich)
+confint(dunnet_sandwich, level = 0.95)
 
+
+## Dunnet Sandwich Step-Down 
+summary(dunnet_sandwich, test = adjusted(type = "free"))
 
 
 

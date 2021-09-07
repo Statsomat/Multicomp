@@ -19,6 +19,7 @@ library(stringr) # for strings
 library(tibble) # for rownames to columns
 library(HH) # hovplot 
 library(onewaytests) #bf test
+library(broom) # display with glance
 ```
 
 
@@ -552,14 +553,14 @@ knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" ", fill
 ```{r GoodnessOfFit, dev="cairo_pdf", eval = eval_model4, results='asis'}
 sum.lmfit <- summary(lmfit)
 
-GoF <- data.frame('Values'=c('Multiple R-Squared'=sum.lmfit$r.squared,
-                             'Adjusted R-Squared'=sum.lmfit$adj.r.squared,
-                             'F-statistic'=a$`F value`[2],'P-value'=a$`Pr(>F)`[2]))
+GoF <- data.frame('Values'=c('Multiple R-Squared'= sum.lmfit$r.squared,
+                             'Adjusted R-Squared'= sum.lmfit$adj.r.squared,
+                             'F-statistic'= sum.lmfit$fstatistic[1],'P'= glance(lmfit)$p.value))
 
 GoF$Explanation <- c("Fraction of variance explained by the model.", 
-                     "Adjusted R-Squared (penalizes the number of predictors).", 
+                     "R-Squared plus penalizes the number of predictors.", 
                      "Measure for the overall significance of the model.", 
-                     "P-value of the F-statistic.")
+                     "Hypothesis test of the overall significance of the model.")
 
 GoF$Interpretation <- NA
 GoF$Interpretation[1] <- "0: No fitting of data by the model. , 1: Perfect fit." 
@@ -579,7 +580,7 @@ cat("## Goodness Of Fit Measures \n", fill=TRUE)
 cat("To evaluate the model, some parameters are listed below.  \n", fill=TRUE)
 
 options(knitr.kable.NA = '')
-x1 <- knitr::kable(GoF, digits=2, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
+x1 <- knitr::kable(GoF, digits=3, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 
 ```
@@ -650,12 +651,12 @@ tryCatch({
 ```
 
 
-```{r levene3, eval = !oneway}
+```{r levene3, eval = evallevene}
  leveneTest(as.formula(modelfunction), data = df_factorized)
 ```
 
 
-```{r levene4, dev = "cairo_pdf", eval = !oneway, results="asis"}
+```{r levene4, dev = "cairo_pdf", eval = evallevene, results="asis"}
 if (leveneobj$`Pr(>F)`[1] <= alphahomog) {
    cat("Warning: Group variances significantly heterogeneous at 10% error! Results from the Analysis of Variance chapter may not be valid. ", fill=TRUE)
    homogtest <- FALSE
@@ -908,7 +909,7 @@ number= c(fn1, fn2, fn3, fn4)
 
 sandw.df <- rownames_to_column(sandw.df, var="Null Hypothesis") %>% head
 
-x1 <- knitr::kable(sandw.df , digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
+x1 <- knitr::kable(sandw.df , digits=3, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 footnote(x1, number = number) %>%
   kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 
@@ -1006,7 +1007,7 @@ number= c(fn1, fn2, fn3)
 dunnet_sw_sd <- rownames_to_column(dunnet_sw_sd, var="Null Hypothesis") %>% head
 #Output table
 opts <- options(knitr.kable.NA = "")
-x <- knitr::kable(dunnet_sw_sd, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
+x <- knitr::kable(dunnet_sw_sd, digits=3, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 footnote(x, number = number) %>%
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```

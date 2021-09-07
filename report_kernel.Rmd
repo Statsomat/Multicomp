@@ -32,7 +32,7 @@ eval_model3 <- FALSE
 eval_model4 <- FALSE
 eval_rows <- FALSE
 oneway <- FALSE
-bfplot <- FALSE 
+bftest <- FALSE 
 homogtest <- FALSE
 evallevene <- FALSE
 
@@ -601,53 +601,46 @@ oneway <- as.logical(eval_model4*(length(df_cat_factor)==1L))
 cat("\\pagebreak ", fill=TRUE)
 # Homogeneity of Variances
 cat("##  Homogeneity of Variances", fill=TRUE)
-# Alpha for the homogeneity tests 
+## Alpha for the homogeneity tests 
 alphahomog <- 0.1
 ```
 
-```{r bftest, dev="cairo_pdf", eval = oneway, results="asis"}
+```{r browntest0, dev="cairo_pdf", eval = oneway, results="asis"}
 # Title Brown and Forsyth Test
 cat("###  Brown and Forsyth Test of Homogeneity of Variances", fill=TRUE)
 ```
 
-
-```{r bftest2, dev="cairo_pdf", eval = oneway}
+```{r browntest, dev="cairo_pdf", eval = oneway}
 tryCatch({
-  
-  hov(as.formula(modelfunction), data = df_factorized)
   bf <- hov(as.formula(modelfunction), data = df_factorized)
-  
-  if (bf$p.value <= alphahomog) {
-     cat("Warning: Group variances significantly heterogeneous at 10% error! Results from The Analysis of Variance chapter may not be valid. ", fill=TRUE)
-  } else {
-     cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)
-     homogtest <- TRUE
-  }
-
-   bfplot <- TRUE 
-   
-}, error = function(e) {cat("Error: The Brown and Forsyth Test of Homogeneity of Variances cannot be executed. ")})
+  bftest <- TRUE 
+   }, error = function(e) {cat("")}
+  )
 ```
 
-```{r hovplot, dev="cairo_pdf", eval = bfplot, results="asis", fig.width=8, fig.cap="Homogeneity of Variance Plot"}
+```{r browntest2, dev="cairo_pdf", eval = bftest}
+hov(as.formula(modelfunction), data = df_factorized)
+if (bf$p.value <= alphahomog) {
+   cat("Warning: Group variances significantly heterogeneous at 10% error! Results from The Analysis of Variance chapter may not be valid. ", fill=TRUE)
+} else {
+   cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)
+   homogtest <- TRUE
+}
+```
+
+```{r browntest3, dev="cairo_pdf", eval = bftest, results="asis", fig.width=8, fig.cap="Homogeneity of Variance Plot"}
 # Brown and Forsythe Plot
 cat("### Brown and Forsyth Plot", fill=TRUE)
-
-## Plot for Brown and Forsythe 
 hovPlot(as.formula(modelfunction), data = df_factorized)
 cat("\\newline ", fill=TRUE)
 cat("Interpretation: The response variable is denoted by y. The fist of the three plots contains boxplots of each level of the independent variable. In the second plot, the response variable y is centered by its median, such that the median of the transformation equals 0. In the third plot, the absolute deviations from the median of the response y are shown. The Brown and Forsyth test statistic is the F statistic resulting from an ordinary one-way analysis of variance on the data points in the third panel (on the absolute deviations from the median). ", fill=TRUE)
 ```
  
-```{r levene0, eval = oneway, results="asis"}
-cat("\\pagebreak")
-``` 
- 
-```{r levene, eval = eval_model4, results="asis"}
+```{r levene, eval = !oneway, results="asis"}
 cat("### Levene Test of Homogeneity of Variances ", fill=TRUE)
 ```
 
-```{r levene2, eval = eval_model4}
+```{r levene2, eval = !oneway}
 tryCatch({
   
   leveneobj <- leveneTest(as.formula(modelfunction), data = df_factorized)
@@ -657,12 +650,12 @@ tryCatch({
 ```
 
 
-```{r levene3, eval = evallevene}
+```{r levene3, eval = !oneway}
  leveneTest(as.formula(modelfunction), data = df_factorized)
 ```
 
 
-```{r levene4, dev = "cairo_pdf", eval = evallevene, results="asis"}
+```{r levene4, dev = "cairo_pdf", eval = !oneway, results="asis"}
 if (leveneobj$`Pr(>F)`[1] <= alphahomog) {
    cat("Warning: Group variances significantly heterogeneous at 10% error! Results from the Analysis of Variance chapter may not be valid. ", fill=TRUE)
    homogtest <- FALSE
@@ -842,28 +835,6 @@ opts <- options(knitr.kable.NA = "")
 x <- knitr::kable(glht_dunnet, digits=2, escape = F, linesep = '', caption="Multiple Comparison: Dunnet Contrasts", longtable = T)
 footnote(x, number = number) %>%
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
-#simoultanous confidence intervals 
-cat(paste("Simultaneous Confidence Intervals which includes the true value of the difference between the reference level ", factorlevel, " and the other levels of ", key), fill=TRUE)
-confmcp <- confint(output_mcp, level = 0.95) 
-conf_glht <- as.data.frame(confmcp$confint)
-colnames(conf_glht) <- c("Value", "Lower bound", "Upper bound")
-rownames(conf_glht) <- paste(rownames(conf_glht),symb,"0")
-conf_glht$sig <- NA
-for (i in 1:nrow(conf_glht)) {
-  if(sign(conf_glht$`Lower bound`)[i]==sign(conf_glht$`Upper bound`)[i]){
-    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(1, "latex") )
-  }else{ 
-    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
-}
-fn4 <- "Remark: Zero is not in the confidence interval."
-fn5 <- "Remark: Zero is in the confidence interval."
-number_2= c(fn4, fn5)
-colnames(conf_glht)[4] <- "Interpretation"
-conf_glht <- rownames_to_column(conf_glht, var="Null Hypothesis") %>% head
-opts <- options(knitr.kable.NA = "")
-x <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption="Simoultaneous Confidence Intervals: Dunnet Contrasts", longtable = T)
-footnote(x, number = number_2) %>% 
-  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
 \pagebreak 
@@ -976,7 +947,7 @@ footnote(x2, number = number_2) %>%
 
 
 ```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval_model4, results='asis'}
-cat("\n## Dunnet Step-Down Sandwich \n", fill=TRUE)
+cat("\n## Dunnet Sandwich Step-Down  \n", fill=TRUE)
 # MCPs with a control Dunnet step-down, Sandwich
 ## Construct input to mcp2 function which is an update of the original mcp function 
 key <- modelsplit[2] 
@@ -1038,33 +1009,6 @@ opts <- options(knitr.kable.NA = "")
 x <- knitr::kable(dunnet_sw_sd, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 footnote(x, number = number) %>%
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
-
-
-
-#simoultanous confidence intervals 
-confmcp <- confint(output_sw_sd, level = 0.95) 
-conf_glht <- as.data.frame(confmcp$confint)
-colnames(conf_glht) <- c("Value", "Lower bound", "Upper bound")
-rownames(conf_glht) <- paste(rownames(conf_glht),symb,"0")
-conf_glht$sig <- NA
-for (i in 1:nrow(conf_glht)) {
-  if(sign(conf_glht$`Lower bound`)[i]==sign(conf_glht$`Upper bound`)[i]){
-    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(1, "latex") )
-  }else{ 
-    conf_glht[i,]$sig <- paste0("The interval (", round(conf_glht$`Lower bound`[i],2), ", ", round(conf_glht$`Upper bound`[i],2), ") traps the true difference ", lev[i+1], "-", factorlevel, " with probability 95 percent.", footnote_marker_number(2, "latex"))}
-}
-fn4 <- "Remark: Zero is not in the confidence interval."
-fn5 <- "Remark: Zero is in the confidence interval."
-number_2= c(fn4, fn5)
-colnames(conf_glht)[4] <- "Interpretation"
-conf_glht <- rownames_to_column(conf_glht, var="Null Hypothesis") %>% head
-opts <- options(knitr.kable.NA = "")
-cat("\\begin{center} Simoultaneous Confidence Intervals: Dunnet Contrasts step-down Sandwich \\end{center}", fill=TRUE)
-cat(paste("Simultaneous Confidence Intervals which include the true value of the difference between the reference level ", factorlevel, " and the other levels of ", key), fill=TRUE)
-
-x1 <- knitr::kable(conf_glht, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
-footnote(x1, number = number_2) %>% 
-  kable_styling(x1, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
 

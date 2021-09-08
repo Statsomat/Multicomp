@@ -33,6 +33,7 @@ eval_model3 <- FALSE
 eval_model4 <- FALSE
 eval_rows <- FALSE
 oneway <- FALSE
+sway <- FALSE
 bftest <- FALSE 
 homogtest <- FALSE
 evallevene <- FALSE
@@ -254,7 +255,7 @@ if (nrow(as.data.frame(df_factorized[complete.cases(df_factorized),])) < 15){
 # Restrict df to complete cases 
 if (length(which(complete_rate < 1)) != 0L){
   df_factorized <- as.data.frame(df_factorized[complete.cases(df_factorized),])
-  cat("Warning: There are missing values in the dataset. We will consider in what follows the analysis based only on the complete cases. ", fill=TRUE)
+  cat("Warning: There are missing values in the dataset. We will consider in what follows the analysis based on the complete cases. For a listing of the missing values, check the Statsomat/EDAR or Statsomat/EDAPY app for descriptive statistics of the dataset. ", fill=TRUE)
   }
 ```
 
@@ -595,6 +596,7 @@ plot(lmfit)
 ```{r def_control_homog, eval = eval_model4}
 # Define execution especially for a one-way model 
 oneway <- as.logical(eval_model4*(length(df_cat_factor)==1L))
+sway <- as.logical(eval_model4*(length(df_cat_factor)>1L))
 ```
 
 
@@ -622,9 +624,9 @@ tryCatch({
 ```{r browntest2, dev="cairo_pdf", eval = bftest}
 hov(as.formula(modelfunction), data = df_factorized)
 if (bf$p.value <= alphahomog) {
-   cat("Warning: Group variances significantly heterogeneous at 10% error! Results from The Analysis of Variance chapter may not be valid. ", fill=TRUE)
+   cat("Warning: Group variances significantly heterogeneous at 10% type I error. Hypothesis tests from the Analysis of Variance chapter may not be valid. Moreover, we recommend in this case the consideration of the subsequent Dunnet test based on the Sandwich estimator. ", fill=TRUE)
 } else {
-   cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)
+   cat("Notice: We assume that the group variances are homogeneous. The subsequent Dunnet test shall be valid. ", fill=TRUE)
    homogtest <- TRUE
 }
 ```
@@ -637,11 +639,11 @@ cat("\\newline ", fill=TRUE)
 cat("Interpretation: The response variable is denoted by y. The fist of the three plots contains boxplots of each level of the independent variable. In the second plot, the response variable y is centered by its median, such that the median of the transformation equals 0. In the third plot, the absolute deviations from the median of the response y are shown. The Brown and Forsyth test statistic is the F statistic resulting from an ordinary one-way analysis of variance on the data points in the third panel (on the absolute deviations from the median). ", fill=TRUE)
 ```
  
-```{r levene, eval = !oneway, results="asis"}
+```{r levene, eval = sway, results="asis"}
 cat("### Levene Test of Homogeneity of Variances ", fill=TRUE)
 ```
 
-```{r levene2, eval = !oneway}
+```{r levene2, eval = sway}
 tryCatch({
   
   leveneobj <- leveneTest(as.formula(modelfunction), data = df_factorized)
@@ -683,9 +685,17 @@ factorlevel <- modelsplit [3]
 lev <- levels(df_factorized[,colnames(df_factorized)==key])
 side <- modelsplit[4]
 
-if(side=="less"){symb <- ">="}
-if(side=="greater"){symb <- "<="}
-if(side=="two.sided"){symb <- "="}
+if(side=="less"){
+  symb <- ">="
+  sidetext <- side
+  }
+if(side=="greater"){
+  symb <- "<="
+  sidetext <- side
+  }
+if(side=="two.sided"){
+  symb <- "="
+  sidetext <- "different"}
 
 #Description above
 cat("\\begin{center} Multiple Comparison: Dunnet Contrasts \\end{center}", fill=TRUE)
@@ -735,9 +745,9 @@ if(side != "two.sided"){
 }else{
     for (i in 1:nrow(glht_dunnet)) {
     if(glht_dunnet[i,]$P.value <= 0.05){
-      glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly different than ", factorlevel, footnote_marker_number(3, "latex"))
+      glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly different from ", factorlevel, footnote_marker_number(3, "latex"))
     }else{ 
-      glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not different than " , lev[i+1], footnote_marker_number(2, "latex"))}
+      glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not different from " , lev[i+1], footnote_marker_number(2, "latex"))}
   }
 }
 
@@ -819,9 +829,9 @@ names(glht_dunnet)[5] <- paste0(names(glht_dunnet)[5], footnote_marker_number(1,
 glht_dunnet$sig <- NA
 for (i in 1:nrow(glht_dunnet)) {
   if(glht_dunnet[i,]$P.value <= 0.05){
-    glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(3, "latex"))
+    glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " from ", factorlevel, footnote_marker_number(3, "latex"))
   }else{ 
-    glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
+    glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " from " , lev[i+1], footnote_marker_number(2, "latex"))}
 }
 # footnote significance codes
 names(glht_dunnet)[6] <- "Significance at 5 percent Type I error"
@@ -890,9 +900,9 @@ names(sandw.df)[5] <- paste0(names(sandw.df)[5], footnote_marker_number(2, "late
 sandw.df$sig <- NA
 for (i in 1:nrow(sandw.df)) {
   if(sandw.df[i,]$P.value <= 0.05){
-    sandw.df[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(4, "latex"))
+    sandw.df[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " from ", factorlevel, footnote_marker_number(4, "latex"))
   }else{ 
-    sandw.df[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(3, "latex"))}
+    sandw.df[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " from " , lev[i+1], footnote_marker_number(3, "latex"))}
 }
 
 sandw.df$'P.value' <- sapply(sandw.df$'P.value',pformat)
@@ -989,13 +999,12 @@ dunnet_sw_sd$P.value <- sapply(dunnet_sw_sd$P.value,pformat)
 names(dunnet_sw_sd)[5] <- paste0(names(dunnet_sw_sd)[5], footnote_marker_number(1, "latex"))
 
 #Interpretation
-#todo Interpretation Dunnet anpassen nach H1
 dunnet_sw_sd$sig <- NA
 for (i in 1:nrow(dunnet_sw_sd)) {
   if(dunnet_sw_sd[i,]$P.value <= 0.05){
-    dunnet_sw_sd[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", side, " than ", factorlevel, footnote_marker_number(3, "latex"))
+    dunnet_sw_sd[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " from ", factorlevel, footnote_marker_number(3, "latex"))
   }else{ 
-    dunnet_sw_sd[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is ", side, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
+    dunnet_sw_sd[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " from " , lev[i+1], footnote_marker_number(2, "latex"))}
 }
 # footnote significance codes
 names(dunnet_sw_sd)[6] <- "Significance at 5 percent Type I error"

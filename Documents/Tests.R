@@ -48,6 +48,7 @@ summary(dunnet_sandwich, test = adjusted(type = "free"))
 #####################################
 df_factorized <- fread("Datasets/warpbreaks.csv", data.table = FALSE)
 df_factorized$tension <- as.factor(df_factorized$tension)
+df_factorized$wool <- as.factor(df_factorized$wool)
 df_factorized[,4] <- relevel(df_factorized[,4], ref = "L")
 modelfunction <- "breaks ~ tension*wool"
 lmfit <- lm(modelfunction, data = df_factorized)
@@ -89,6 +90,7 @@ summary(dunnet_sandwich, test = adjusted(type = "free"))
 #####################################
 df_factorized <- fread("Datasets/warpbreaks.csv", data.table = FALSE)
 df_factorized$tension <- as.factor(df_factorized$tension)
+df_factorized$wool <- as.factor(df_factorized$wool)
 df_factorized[,4] <- relevel(df_factorized[,4], ref = "M")
 modelfunction <- "breaks ~ wool+ tension"
 lmfit <- lm(modelfunction, data = df_factorized)
@@ -118,3 +120,9 @@ confint(dunnet_sandwich, level = 0.95)
 
 ## Dunnet Sandwich Step-Down 
 summary(dunnet_sandwich, test = adjusted(type = "free"))
+
+
+
+
+
+

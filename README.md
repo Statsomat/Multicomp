@@ -5,4 +5,4 @@
 Large parts of the app where developed by students at the Faculty of the Mathematics and Technics at the <a target="_blank" rel="noopener noreferrer" href="https://www.hs-koblenz.de/"><b>University of Applied Sciences Koblenz, Germany</b></a> during a summer semester 2021 course. 
 </p>
 <h3>Feedback</h3>
-We would greatly appreciate your <a target="_blank" rel="noopener noreferrer" href="https://statsomat.com/contact"><b>feedback</b></a> to improve our apps. You can also go to the <a target="_blank" rel="noopener noreferrer" href="https://github.com/Statsomat/Multicomp"><b>GitHub repository</b></a> to report issues or to contribute. 
+We would greatly appreciate your <a target="_blank" rel="noopener noreferrer" href="https://statsomat.com/contact"><b>feedback</b></a> to improve our apps. 

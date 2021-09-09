@@ -841,7 +841,7 @@ for (i in 1:nrow(glht_dunnet)) {
   if(glht_dunnet[i,]$P.value <= 0.05){
     glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " than ", factorlevel, footnote_marker_number(3, "latex"))
   }else{ 
-    glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
+    glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", lev[i+1], " of factor ", key , " is not ", sidetext, " than " , factorlevel, footnote_marker_number(2, "latex"))}
 }
 # footnote significance codes
 names(glht_dunnet)[6] <- "Significance at 5 percent Type I error"
@@ -912,7 +912,7 @@ for (i in 1:nrow(sandw.df)) {
   if(sandw.df[i,]$P.value <= 0.05){
     sandw.df[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " than ", factorlevel, footnote_marker_number(4, "latex"))
   }else{ 
-    sandw.df[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " than " , lev[i+1], footnote_marker_number(3, "latex"))}
+    sandw.df[i,]$sig <- paste0("Not Significant. Level ", lev[i+1], " of factor ", key , " is not ", sidetext, " than " , factorlevel, footnote_marker_number(3, "latex"))}
 }
 
 sandw.df$'P.value' <- sapply(sandw.df$'P.value',pformat)
@@ -973,7 +973,7 @@ cat("Note: The step-down procedure may lead to more powerful hypotheses tests an
 # MCPs with a control Dunnet step-down, Sandwich
 ## Construct input to mcp2 function which is an update of the original mcp function 
 key <- modelsplit[2] 
-factorlevel <- modelsplit [3]
+factorlevel <- modelsplit[3]
 lev <- levels(df_factorized[,colnames(df_factorized)==key])
 side <- modelsplit[4]
 if(side=="less"){symb <- ">="}
@@ -1015,7 +1015,7 @@ for (i in 1:nrow(dunnet_sw_sd)) {
   if(dunnet_sw_sd[i,]$P.value <= 0.05){
     dunnet_sw_sd[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " than ", factorlevel, footnote_marker_number(3, "latex"))
   }else{ 
-    dunnet_sw_sd[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
+    dunnet_sw_sd[i,]$sig <- paste0("Not Significant. Level ", lev[i+1], " of factor ", key , " is not ", sidetext, " than " , factorlevel, footnote_marker_number(2, "latex"))}
 }
 # footnote significance codes
 names(dunnet_sw_sd)[6] <- "Significance at 5 percent Type I error"

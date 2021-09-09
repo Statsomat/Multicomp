@@ -120,7 +120,7 @@ if (exists("df_noncont")){
 eval <- TRUE
 }, error=function(e) {
   
-  stop(safeError("Dataset cannot be prepared. Please check the data for consistency."))
+  stop(safeError("The dataset cannot be prepared. "))
   
 }
 )
@@ -442,13 +442,13 @@ tryCatch({
     pvalue <- round(as.numeric(coef.lmfit1[i,]$'P.value'),3)
     if(pvalue <= 0.05){
       if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
-        coef.lmfit1[i,]$sig <- paste0("Interaction effect if levels ", sub(":", paste0(" and "), coef.lmfit1[i,]$Variable)," are present is significant. ")
+        coef.lmfit1[i,]$sig <- paste0("Interaction effect if level(s) ", sub(":", paste0(" and "), coef.lmfit1[i,]$Variable)," are present is significant. ")
                                 
       }else coef.lmfit1[i,]$sig <- paste0("Significant difference between ", 
                                           coef.lmfit1[i,]$Variable, " and the reference of this factor. ")
     }else{ 
       if(str_detect(coef.lmfit1[i,]$Variable, ":")==T){
-        coef.lmfit1[i,]$sig <- paste0("Interaction effect if levels ",sub(":", paste0(" and "), coef.lmfit1[i,]$Variable)," are present is not significant. ")
+        coef.lmfit1[i,]$sig <- paste0("Interaction effect if level(s) ",sub(":", paste0(" and "), coef.lmfit1[i,]$Variable)," are present is not significant. ")
       }else coef.lmfit1[i,]$sig <- paste0("No significant difference between ",coef.lmfit1[i,]$Variable, " and the reference of this factor.")}
        
   }
@@ -481,7 +481,7 @@ tryCatch({
 ```{r Parametertable2, dev="cairo_pdf", eval = eval_model3, results='asis'}  
 # Output Table
 cat("## Detailed Influence of Predictors (Linear Model Parameter Estimates) \n", fill=TRUE)
-cat("Note: No adjustement for multiplicity. Interpretation in the last column suitable only to categorical predictors. ", fill=TRUE)
+cat("Note: No adjustement for multiplicity. Interpretation in the last column suitable especially to categorical predictors. ", fill=TRUE)
 opts <- options(knitr.kable.NA = "")
 x <- knitr::kable(coef.lmfit1, digits=2, escape = F, linesep = '', caption=cat(" ", fill=TRUE), longtable = T)
 footnote(x, number = number) %>%
@@ -526,15 +526,15 @@ tryCatch({
         )
   }
   
-  #format p-value column to p-value
+  # Format p-value column to p-value
   df_table$P.value <- sapply(df_table$P.value,pformat)
 
-
+  # Next chunks 
   eval_model4 <- TRUE 
 
 }, error=function(e) {
   
-  stop(safeError("ANOVA Type III table cannot be created. Execution stopped. "))
+  stop(safeError("ANOVA Type III table cannot be generated. Are there any empty cells in the data? Execution stopped. "))
   
 })
 ```
@@ -546,7 +546,7 @@ cat("## Total Influence of Predictors (ANOVA Type III) \n", fill=TRUE)
 options(knitr.kable.NA = '')
 knitr::kable(df_table, digits=2, escape = T, linesep = '', caption=cat(" ", fill=TRUE), longtable = T) %>%
   kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header")) %>%
-  footnote(general = "If any, a significant interaction means the effect of one in the interaction involved predictor depends on (the levels of) the other predictor. ")  
+  footnote(general = "If any, a significant interaction means the main effect of one in the interaction involved predictor depends on (the levels of) the other predictor.")   
   
 ```
 
@@ -623,15 +623,18 @@ tryCatch({
 
 ```{r browntest2, dev="cairo_pdf", eval = bftest}
 hov(as.formula(modelfunction), data = df_factorized)
+```
+
+```{r browntest3, dev="cairo_pdf", eval = bftest, results="asis"}
 if (bf$p.value <= alphahomog) {
-   cat("Warning: Group variances significantly heterogeneous at 10% type I error. Hypothesis tests from the Analysis of Variance chapter may not be valid. Moreover, we recommend in this case the consideration of the subsequent Dunnet test based on the Sandwich estimator. ", fill=TRUE)
+   cat("Warning: Group variances significantly heterogeneous at 10% type I error. Hypothesis tests from the Analysis of Variance chapter may not be valid. We recommend in this case the consideration of the subsequent Dunnet tests based on the Sandwich estimator. ", fill=TRUE)
 } else {
-   cat("Notice: We assume that the group variances are homogeneous. The subsequent Dunnet test shall be valid. ", fill=TRUE)
+   cat("Notice: We assume that the group variances are homogeneous. ", fill=TRUE)
    homogtest <- TRUE
 }
 ```
 
-```{r browntest3, dev="cairo_pdf", eval = bftest, results="asis", fig.width=8, fig.cap="Homogeneity of Variance Plot"}
+```{r browntest4, dev="cairo_pdf", eval = bftest, results="asis", fig.width=8, fig.cap="Homogeneity of Variance Plot"}
 # Brown and Forsythe Plot
 cat("### Brown and Forsyth Plot", fill=TRUE)
 hovPlot(as.formula(modelfunction), data = df_factorized)
@@ -660,17 +663,16 @@ tryCatch({
 
 ```{r levene4, dev = "cairo_pdf", eval = evallevene, results="asis"}
 if (leveneobj$`Pr(>F)`[1] <= alphahomog) {
-   cat("Warning: Group variances significantly heterogeneous at 10% error! Results from the Analysis of Variance chapter may not be valid. ", fill=TRUE)
-   homogtest <- FALSE
+    cat("Warning: Group variances significantly heterogeneous at 10% type I error. Hypothesis tests from the Analysis of Variance chapter may not be valid. We recommend in this case the consideration of the subsequent Dunnet tests based on the Sandwich estimator. ", fill=TRUE)
 } else {
-   cat("Interpretation: We assume that the group variances are homogeneous, therefore the Analysis of Variance results are valid. ", fill=TRUE)
+   cat("Notice: We assume that the group variances are homogeneous. ", fill=TRUE)
    homogtest <- TRUE
 }
 ```
 
 \pagebreak
 
-```{r Dunnet, eval=eval_model4, results='asis', dev="cairo_pdf"}
+```{r Dunnet, eval = eval_model4, results='asis', dev="cairo_pdf"}
 cat("\n# Multiple Comparisons of Means to a Control \n", fill=TRUE)
 #cat("\\small ", fill=TRUE)
 cat("Theoretical background: Testing multiple hypotheses simultaneously and each at the same pre-specified significance level, increases the probability of false positive effects. The probability to commit at least one false positive decision increases with the number of hypotheses. A solution to overcome this problem is given by multiple comparisons procedures. Here, we do not control the per-hypothesis Type I error but the probability of committing at least one Type I error over all hypotheses. Using p-values adjusted for multiplicity, individual hypotheses can be finally compared with the pre-specified significance level.",fill=TRUE)
@@ -805,6 +807,7 @@ footnote(x, number = number_2) %>%
 ```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval_model4, results = "asis"}
 # MCPs with a control Dunnet step-down 
 cat("## Dunnet Step-Down \n", fill=TRUE)
+cat("Note: The step-down procedure may lead to more powerful hypotheses tests and may be be applied for hypotheses satisfying the free combination condition, as in our many-to-one case. ", fill=TRUE)
 mylist <- list()
 mylist[[key]] <- "Dunnet"
 names(mylist) <- key 
@@ -829,9 +832,9 @@ names(glht_dunnet)[5] <- paste0(names(glht_dunnet)[5], footnote_marker_number(1,
 glht_dunnet$sig <- NA
 for (i in 1:nrow(glht_dunnet)) {
   if(glht_dunnet[i,]$P.value <= 0.05){
-    glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " from ", factorlevel, footnote_marker_number(3, "latex"))
+    glht_dunnet[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " than ", factorlevel, footnote_marker_number(3, "latex"))
   }else{ 
-    glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " from " , lev[i+1], footnote_marker_number(2, "latex"))}
+    glht_dunnet[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
 }
 # footnote significance codes
 names(glht_dunnet)[6] <- "Significance at 5 percent Type I error"
@@ -900,9 +903,9 @@ names(sandw.df)[5] <- paste0(names(sandw.df)[5], footnote_marker_number(2, "late
 sandw.df$sig <- NA
 for (i in 1:nrow(sandw.df)) {
   if(sandw.df[i,]$P.value <= 0.05){
-    sandw.df[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " from ", factorlevel, footnote_marker_number(4, "latex"))
+    sandw.df[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " than ", factorlevel, footnote_marker_number(4, "latex"))
   }else{ 
-    sandw.df[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " from " , lev[i+1], footnote_marker_number(3, "latex"))}
+    sandw.df[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " than " , lev[i+1], footnote_marker_number(3, "latex"))}
 }
 
 sandw.df$'P.value' <- sapply(sandw.df$'P.value',pformat)
@@ -957,8 +960,9 @@ footnote(x2, number = number_2) %>%
 \pagebreak 
 
 
-```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval=eval_model4, results='asis'}
+```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval = eval_model4, results='asis'}
 cat("\n## Dunnet Sandwich Step-Down  \n", fill=TRUE)
+cat("Note: The step-down procedure may lead to more powerful hypotheses tests and may be be applied for hypotheses satisfying the free combination condition, as in our many-to-one case. ", fill=TRUE)
 # MCPs with a control Dunnet step-down, Sandwich
 ## Construct input to mcp2 function which is an update of the original mcp function 
 key <- modelsplit[2] 
@@ -1002,9 +1006,9 @@ names(dunnet_sw_sd)[5] <- paste0(names(dunnet_sw_sd)[5], footnote_marker_number(
 dunnet_sw_sd$sig <- NA
 for (i in 1:nrow(dunnet_sw_sd)) {
   if(dunnet_sw_sd[i,]$P.value <= 0.05){
-    dunnet_sw_sd[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " from ", factorlevel, footnote_marker_number(3, "latex"))
+    dunnet_sw_sd[i,]$sig <- paste0("Significant. Level ", lev[i+1], " of factor ", key, " is significantly ", sidetext, " than ", factorlevel, footnote_marker_number(3, "latex"))
   }else{ 
-    dunnet_sw_sd[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " from " , lev[i+1], footnote_marker_number(2, "latex"))}
+    dunnet_sw_sd[i,]$sig <- paste0("Not Significant. Level ", factorlevel, " of factor ", key , " is not ", sidetext, " than " , lev[i+1], footnote_marker_number(2, "latex"))}
 }
 # footnote significance codes
 names(dunnet_sw_sd)[6] <- "Significance at 5 percent Type I error"

@@ -4,7 +4,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE, warning=FALSE, fig.width=8)
+knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE, warning = FALSE, fig.width=8)
 # Import libraries used further below
 library(knitr) # for tables
 library(kableExtra) # for tables 
@@ -172,10 +172,16 @@ if (exists("df_cont")){
   } else {
     cat("0", fill=TRUE)
     cat("\\newline",fill=TRUE)
-    cat("Error: There are no continuous variables of interest in the dataset. Execution stopped. ")
+    cat("Error: There are no continuous response variables of interest in the dataset. Execution stopped. ")
     eval <- FALSE
   }
+} else {
+  cat("Error: There are no continuous response variables of interest in the dataset. Execution stopped. ")
+  cat("\\newline",fill=TRUE)
+  eval <- FALSE
 }
+
+
 if (exists("df_cat")){
   cat("Variables considered categorical: ", fill=TRUE)
   if (ncol(df_cat)>0){
@@ -189,11 +195,15 @@ if (exists("df_cat")){
     cat("Error: There are no factors in the dataset. Execution stopped. ")
     eval <- FALSE
   }
+} else {
+  cat("Error: There are no factors in the dataset. Execution stopped. ")
+  cat("\\newline",fill=TRUE) 
+  eval <- FALSE
 }
 ```
 
 
-```{r falsechar, results="asis", eval=eval}
+```{r falsechar, results="asis", eval=eval, warning = FALSE}
 # Numeric falsly to char? 
 check_reading <- function(col){
   numeric <- !is.na(as.numeric(col))
@@ -205,7 +215,6 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
   cat("**Warning: More than 90% of the values of these columns could be treated as numeric. Nevertheless, because of some values or the selected decimal character, the columns must be treated as discrete. Are all the values plausible? Please check the data once more before uploading! Column(s):**", names(numeric_percent[(numeric_percent>0.9)]), fill=TRUE)
 }
 ```
-
 
 \pagebreak
 
@@ -226,14 +235,11 @@ cat("You are interested in pairwise comparisons to the reference level (control)
 cat(modelsplit[3])
 ```
 
-
 ```{r factoring, eval=eval}
 # Factorize categorical variables 
 df_cat_factor <- lapply(df_cat, as.factor)
 df_factorized <- cbind(df_cont, df_cat_factor)  
 ```
-
-
 
 ```{r missings, results="asis", eval=eval}
 # Notice for missings (only <10% missings allowed, only complete cases treated)
@@ -259,6 +265,7 @@ if (length(which(complete_rate < 1)) != 0L){
   }
 ```
 
+\pagebreak
 
 ```{r descplots, dev="cairo_pdf", eval=eval, results='asis'}
 
@@ -672,7 +679,7 @@ if (leveneobj$`Pr(>F)`[1] <= alphahomog) {
 
 \pagebreak
 
-```{r Dunnet, eval = eval_model4, results='asis', dev="cairo_pdf"}
+```{r Dunnet, eval = eval_model4, results='asis', dev="cairo_pdf", warning = TRUE}
 cat("\n# Multiple Comparisons of Means to a Control \n", fill=TRUE)
 #cat("\\small ", fill=TRUE)
 cat("Theoretical background: Testing multiple hypotheses simultaneously and each at the same pre-specified significance level, increases the probability of false positive effects. The probability to commit at least one false positive decision increases with the number of hypotheses. A solution to overcome this problem is given by multiple comparisons procedures. Here, we do not control the per-hypothesis Type I error but the probability of committing at least one Type I error over all hypotheses. Using p-values adjusted for multiplicity, individual hypotheses can be finally compared with the pre-specified significance level.",fill=TRUE)
@@ -804,7 +811,7 @@ footnote(x, number = number_2) %>%
 
 \pagebreak
 
-```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval_model4, results = "asis"}
+```{r dunnet_stepdown, dev = "cairo_pdf", eval = eval_model4, results = "asis", warning = TRUE}
 # MCPs with a control Dunnet step-down 
 cat("## Dunnet Step-Down \n", fill=TRUE)
 cat("Note: The step-down procedure may lead to more powerful hypotheses tests and may be be applied for hypotheses satisfying the free combination condition, as in our many-to-one case. ", fill=TRUE)
@@ -853,7 +860,7 @@ footnote(x, number = number) %>%
 
 \pagebreak 
 
-```{r dunnet_sandwich, dev = "cairo_pdf", eval = eval_model4, results = "asis"}
+```{r dunnet_sandwich, dev = "cairo_pdf", eval = eval_model4, results = "asis", warning = TRUE}
 # MCPs with a control Dunnet Sandwich
 
 key <- modelsplit[2] 
@@ -960,7 +967,7 @@ footnote(x2, number = number_2) %>%
 \pagebreak 
 
 
-```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval = eval_model4, results='asis'}
+```{r DunnetStepdownSandwich, dev= "cairo_pdf", eval = eval_model4, results='asis', warning = TRUE}
 cat("\n## Dunnet Sandwich Step-Down  \n", fill=TRUE)
 cat("Note: The step-down procedure may lead to more powerful hypotheses tests and may be be applied for hypotheses satisfying the free combination condition, as in our many-to-one case. ", fill=TRUE)
 # MCPs with a control Dunnet step-down, Sandwich
@@ -1025,6 +1032,10 @@ footnote(x, number = number) %>%
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```
 
+```{r messagewarning, results="asis", eval = eval}
+cat("# Warning", fill=TRUE)
+cat("Please consider that this report depends on hard-coded cutoff-values which may be too liberal or too conservative for your research area. The automatic computation and interpretation delivered by the Statsomat/Multicomp app should not completely replace the classical, human-based graphical exploratory data analysis and statistical analysis. There may be data cases for which the Statsomat does not deliver the most optimal solution or output interpretation.")
+```    
 
 ```{r references, results="asis"}
 cat("# References", fill=TRUE)

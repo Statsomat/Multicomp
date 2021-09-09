@@ -1,2 +1,7 @@
 # Multicomp
-Hi! This repository is for the development of the core of an Statsomat app for Multiple Comparison Procedures. Development team: Denise, Viktoria Daum vdaum@hs-koblenz.de, Damian Nink dnink@rheinahrcampus.de, Simone Schuettler sschuett@hs-koblenz.de, Linda Mueller lmuelle2@hs-koblenz.de, Daniela Wueller dwueller@hs-koblenz.de
+<p>The app generates a report for Multiple Comparisons Procedures (MCP) with a Control, in particular the Dunnet test and variants for linear models with at least one factor (categorical predictor) of interest. Annotated output tables, graphics and a brief theoretical background are included where appropiate. This version is an experimental beta version in progress. Automated recommendations for the choice of the optimal MCP or other statistical analyzes as well the code for reproducibility will be included soon. 
+</p>
+<p>
+Large parts of the app where developed by students at the Faculty of the Mathematics and Technics at the <a target="_blank" rel="noopener noreferrer" href="https://www.hs-koblenz.de/"><b>University of Applied Sciences Koblenz, Germany</b></a> during a summer semester 2021 course. The app is open source, check the 
+<a target="_blank" rel="noopener noreferrer" href="https://github.com/Statsomat/Multicomp"><b>GitHub repository</b></a>. 
+</p>

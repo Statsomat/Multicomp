@@ -4,5 +4,7 @@
 <p>
 Large parts of the app where developed by students at the Faculty of the Mathematics and Technics at the <a target="_blank" rel="noopener noreferrer" href="https://www.hs-koblenz.de/"><b>University of Applied Sciences Koblenz, Germany</b></a> during a summer semester 2021 course. 
 </p>
+<h3>Other Apps</h3>
+Check out other apps at https://statsomat.com. 
 <h3>Feedback</h3>
 We would greatly appreciate your <a target="_blank" rel="noopener noreferrer" href="https://statsomat.com/contact"><b>feedback</b></a> to improve our apps. 

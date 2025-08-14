@@ -8,3 +8,6 @@ Large parts of the app where developed by students at the Faculty of the Mathema
 Check out other apps at https://statsomat.com. 
 <h3>Feedback</h3>
 We would greatly appreciate your <a target="_blank" rel="noopener noreferrer" href="https://statsomat.com/contact"><b>feedback</b></a> to improve our apps. 
+
+## Contributor Privacy
+If you wish to be anonymized in this repository at any time, contact [https://www.hs-koblenz.de/profile/welsch] and we will update the commit history to remove identifying information.
